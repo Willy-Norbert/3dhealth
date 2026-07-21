@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -10,7 +11,9 @@ export default function Login() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('student');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +21,7 @@ export default function Login() {
     
     try {
       const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
-      const body = isRegister ? { name, email, password } : { email, password };
+      const body = isRegister ? { name, email, password, role } : { email, password };
       
       const res = await fetch(`http://localhost:5000${endpoint}`, {
         method: 'POST',
@@ -33,7 +36,13 @@ export default function Login() {
       }
 
       login(data);
-      navigate(data.isAdmin ? '/dashboard/admin' : '/');
+      if (data.role === 'admin') {
+        navigate('/dashboard/admin');
+      } else if (data.role === 'lecturer') {
+        navigate('/dashboard/lecturer');
+      } else {
+        navigate('/dashboard/student');
+      }
     } catch (err: any) {
       setError(err.message);
     }
@@ -60,17 +69,30 @@ export default function Login() {
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           {isRegister && (
-            <div>
-              <label className="block text-sm font-medium text-blue-200 mb-1">Full Name</label>
-              <input 
-                type="text" 
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
-                placeholder="Dr. John Doe"
-              />
-            </div>
+            <>
+              <div>
+                <label className="block text-sm font-medium text-blue-200 mb-1">Full Name</label>
+                <input 
+                  type="text" 
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+                  placeholder="Dr. John Doe"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-blue-200 mb-1">Role</label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition [&>option]:text-slate-900"
+                >
+                  <option value="student">Student</option>
+                  <option value="lecturer">Lecturer</option>
+                </select>
+              </div>
+            </>
           )}
           
           <div>
@@ -88,14 +110,23 @@ export default function Login() {
             <div className="flex justify-between items-center mb-1">
               <label className="block text-sm font-medium text-blue-200">Password</label>
             </div>
-            <input 
-              type="password" 
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-xl pl-4 pr-12 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
           
           <div className="pt-4">

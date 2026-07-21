@@ -8,7 +8,7 @@ interface UserItem {
   _id: string;
   name: string;
   email: string;
-  isAdmin: boolean;
+  role: 'student' | 'lecturer' | 'admin';
   createdAt: string;
 }
 
@@ -16,6 +16,13 @@ interface Stat {
   simulationName: string;
   totalTimeSeconds: number;
   userCount: number;
+}
+
+interface AdminStats {
+  totalUsers: number;
+  totalCourses: number;
+  totalQuizResults: number;
+  simulationStats: Stat[];
 }
 
 // Map internal scene IDs to display labels
@@ -41,8 +48,8 @@ function generateReport(users: UserItem[], stats: Stat[], adminName: string) {
   const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
   const totalUsers = users.length;
-  const adminUsers = users.filter(u => u.isAdmin).length;
-  const studentUsers = totalUsers - adminUsers;
+  const adminUsers = users.filter(u => u.role === 'admin').length;
+  const studentUsers = users.filter(u => u.role === 'student').length;
   const totalTimeAll = stats.reduce((sum, s) => sum + s.totalTimeSeconds, 0);
   const mostActive = stats.sort((a, b) => b.totalTimeSeconds - a.totalTimeSeconds)[0];
 
@@ -61,8 +68,8 @@ function generateReport(users: UserItem[], stats: Stat[], adminName: string) {
       <td style="padding: 10px 12px;">${u.name}</td>
       <td style="padding: 10px 12px;">${u.email}</td>
       <td style="padding: 10px 12px; text-align:center;">
-        <span style="background:${u.isAdmin ? '#ede9fe' : '#e0f2fe'}; color:${u.isAdmin ? '#7c3aed' : '#0369a1'}; padding: 2px 10px; border-radius: 99px; font-size: 12px;">
-          ${u.isAdmin ? 'Admin' : 'Student'}
+        <span style="background:#e0f2fe; color:#0369a1; padding: 2px 10px; border-radius: 99px; font-size: 12px;">
+          ${u.role}
         </span>
       </td>
       <td style="padding: 10px 12px; color:#6b7280;">${new Date(u.createdAt).toLocaleDateString()}</td>
@@ -275,8 +282,10 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const [users, setUsers] = useState<UserItem[]>([]);
-  const [stats, setStats] = useState<Stat[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [statsData, setStatsData] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'users' | 'courses' | 'simulations'>('users');
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
@@ -295,25 +304,29 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!user || !user.isAdmin) {
+    if (!user || user.role !== 'admin') {
       navigate('/login');
       return;
     }
 
     const fetchData = async () => {
       try {
-        const [usersRes, statsRes] = await Promise.all([
+        const [usersRes, statsRes, coursesRes] = await Promise.all([
           fetch('http://localhost:5000/api/admin/users', {
             headers: { Authorization: `Bearer ${user.token}` }
           }),
           fetch('http://localhost:5000/api/admin/stats', {
             headers: { Authorization: `Bearer ${user.token}` }
+          }),
+          fetch('http://localhost:5000/api/courses', {
+            headers: { Authorization: `Bearer ${user.token}` }
           })
         ]);
-
-        if (usersRes.ok && statsRes.ok) {
+ 
+        if (usersRes.ok && statsRes.ok && coursesRes.ok) {
           setUsers(await usersRes.json());
-          setStats(await statsRes.json());
+          setStatsData(await statsRes.json());
+          setCourses(await coursesRes.json());
         }
       } catch (error) {
         console.error('Failed to fetch admin data', error);
@@ -338,6 +351,44 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteCourse = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this course/lecture?')) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/courses/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      if (res.ok) {
+        setCourses(courses.filter(c => c._id !== id));
+        // Refresh stats
+        const statsRes = await fetch('http://localhost:5000/api/admin/stats', {
+          headers: { Authorization: `Bearer ${user?.token}` }
+        });
+        if (statsRes.ok) setStatsData(await statsRes.json());
+      }
+    } catch (error) {
+      console.error('Failed to delete course', error);
+    }
+  };
+
+  const handleRoleChange = async (id: string, newRole: string) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/admin/users/${id}/role`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user?.token}` 
+        },
+        body: JSON.stringify({ role: newRole })
+      });
+      if (res.ok) {
+        setUsers(users.map(u => u._id === id ? { ...u, role: newRole as 'student' | 'lecturer' | 'admin' } : u));
+      }
+    } catch (error) {
+      console.error('Failed to update role', error);
+    }
+  };
+
   const handlePrint = () => {
     iframeRef.current?.contentWindow?.print();
   };
@@ -346,10 +397,10 @@ export default function AdminDashboard() {
     setShowDownloadMenu(false);
     setDownloading(format);
     try {
-      if (format === 'csv') downloadCSV(users, stats);
-      else if (format === 'excel') downloadExcel(users, stats);
+      if (format === 'csv') downloadCSV(users, statsData?.simulationStats || []);
+      else if (format === 'excel') downloadExcel(users, statsData?.simulationStats || []);
       else if (format === 'pdf') await downloadPDF(iframeRef.current);
-      else if (format === 'docx') await downloadDOCX(users, stats, user?.name || 'Administrator');
+      else if (format === 'docx') await downloadDOCX(users, statsData?.simulationStats || [], user?.name || 'Administrator');
       else if (format === 'png') await downloadImage(iframeRef.current, 'png');
       else if (format === 'jpg') await downloadImage(iframeRef.current, 'jpg');
     } finally {
@@ -476,7 +527,11 @@ export default function AdminDashboard() {
             <p className="text-slate-400 text-sm sm:text-base">Manage users and monitor system engagement.</p>
           </div>
           <button
-            onClick={() => setPreviewHtml(generateReport(users, stats, user?.name || 'Administrator'))}
+            onClick={() => {
+              if (statsData) {
+                 setPreviewHtml(generateReport(users, statsData.simulationStats, user?.name || 'Administrator'))
+              }
+            }}
             className="flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl transition shadow-[0_0_20px_rgba(14,165,233,0.3)] w-full sm:w-auto"
           >
             <FileText className="w-4 h-4" /> Generate Report
@@ -486,10 +541,10 @@ export default function AdminDashboard() {
         {/* Summary Stats Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {[
-            { label: 'Total Users', value: users.length, color: 'text-sky-400' },
-            { label: 'Students', value: users.filter(u => !u.isAdmin).length, color: 'text-emerald-400' },
-            { label: 'Admins', value: users.filter(u => u.isAdmin).length, color: 'text-purple-400' },
-            { label: 'Simulations', value: stats.length, color: 'text-amber-400' },
+            { label: 'Total Users', value: statsData?.totalUsers || 0, color: 'text-sky-400' },
+            { label: 'Total Courses', value: statsData?.totalCourses || 0, color: 'text-emerald-400' },
+            { label: 'Quizzes Taken', value: statsData?.totalQuizResults || 0, color: 'text-purple-400' },
+            { label: 'Simulations', value: statsData?.simulationStats.length || 0, color: 'text-amber-400' },
           ].map((card) => (
             <div key={card.label} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 text-center">
               <div className={`text-3xl sm:text-4xl font-black ${card.color}`}>{card.value}</div>
@@ -498,98 +553,181 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8">
+        {/* Navigation Tabs */}
+        <div className="flex border-b border-slate-800 gap-4 mb-2">
+          <button 
+            onClick={() => setActiveTab('users')}
+            className={`pb-4 px-2 font-bold text-sm transition-all border-b-2 ${activeTab === 'users' ? 'border-sky-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+          >
+            User Management
+          </button>
+          <button 
+            onClick={() => setActiveTab('courses')}
+            className={`pb-4 px-2 font-bold text-sm transition-all border-b-2 ${activeTab === 'courses' ? 'border-sky-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+          >
+            Lectures & Courses
+          </button>
+          <button 
+            onClick={() => setActiveTab('simulations')}
+            className={`pb-4 px-2 font-bold text-sm transition-all border-b-2 ${activeTab === 'simulations' ? 'border-sky-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+          >
+            Simulation Engagement
+          </button>
+        </div>
+
+        <div className="space-y-6">
 
           {/* User Management */}
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
-            <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center gap-3">
-              <Users className="text-sky-400 w-5 h-5 sm:w-6 sm:h-6" />
-              <h2 className="text-lg sm:text-xl font-bold text-white">User Management</h2>
-            </div>
-            {/* Mobile card list */}
-            <div className="block sm:hidden divide-y divide-slate-800">
-              {users.map((u) => (
-                <div key={u._id} className="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p className="text-white font-medium text-sm">{u.name}</p>
-                    <p className="text-slate-400 text-xs truncate max-w-[160px]">{u.email}</p>
-                    <span className={`mt-1 inline-block px-2 py-0.5 text-xs rounded-full ${u.isAdmin ? 'bg-purple-500/20 text-purple-400' : 'bg-slate-700 text-slate-300'}`}>
-                      {u.isAdmin ? 'Admin' : 'Student'}
-                    </span>
+          {activeTab === 'users' && (
+            <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+              <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center gap-3">
+                <Users className="text-sky-400 w-5 h-5 sm:w-6 sm:h-6" />
+                <h2 className="text-lg sm:text-xl font-bold text-white">User Management</h2>
+              </div>
+              {/* Mobile card list */}
+              <div className="block sm:hidden divide-y divide-slate-800">
+                {users.map((u) => (
+                  <div key={u._id} className="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <p className="text-white font-medium text-sm">{u.name}</p>
+                      <p className="text-slate-400 text-xs truncate max-w-[160px]">{u.email}</p>
+                      <span className={`mt-1 inline-block px-2 py-0.5 text-xs rounded-full ${u.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : u.role === 'lecturer' ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-700 text-slate-300'}`}>
+                        {u.role === 'admin' ? 'Admin' : u.role === 'lecturer' ? 'Lecturer' : 'Student'}
+                      </span>
+                    </div>
+                    <button onClick={() => handleDeleteUser(u._id)} disabled={u._id === user?._id}
+                      className="text-red-400 hover:text-red-300 disabled:opacity-30 transition p-2">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button onClick={() => handleDeleteUser(u._id)} disabled={u._id === user?._id}
-                    className="text-red-400 hover:text-red-300 disabled:opacity-30 transition p-2">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              {users.length === 0 && <p className="p-6 text-center text-slate-500 text-sm">No users found.</p>}
-            </div>
-            {/* Desktop table */}
-            <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full text-left text-slate-300">
-                <thead className="bg-slate-950 text-slate-400 text-sm">
-                  <tr>
-                    <th className="p-4 font-medium">Name</th>
-                    <th className="p-4 font-medium">Email</th>
-                    <th className="p-4 font-medium">Role</th>
-                    <th className="p-4 font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {users.map((u) => (
-                    <tr key={u._id} className="hover:bg-slate-800/50 transition">
-                      <td className="p-4">{u.name}</td>
-                      <td className="p-4 text-slate-400 text-sm">{u.email}</td>
-                      <td className="p-4">
-                        <span className={`px-2 py-1 text-xs rounded-full ${u.isAdmin ? 'bg-purple-500/20 text-purple-400' : 'bg-slate-700 text-slate-300'}`}>
-                          {u.isAdmin ? 'Admin' : 'Student'}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <button onClick={() => handleDeleteUser(u._id)} disabled={u._id === user?._id}
-                          className="text-red-400 hover:text-red-300 disabled:opacity-30 transition p-2">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+                ))}
+                {users.length === 0 && <p className="p-6 text-center text-slate-500 text-sm">No users found.</p>}
+              </div>
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-slate-300">
+                  <thead className="bg-slate-950 text-slate-400 text-sm">
+                    <tr>
+                      <th className="p-4 font-medium">Name</th>
+                      <th className="p-4 font-medium">Email</th>
+                      <th className="p-4 font-medium">Role</th>
+                      <th className="p-4 font-medium text-right">Actions</th>
                     </tr>
-                  ))}
-                  {users.length === 0 && (
-                    <tr><td colSpan={4} className="p-8 text-center text-slate-500">No users found.</td></tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {users.map((u) => (
+                      <tr key={u._id} className="hover:bg-slate-800/50 transition">
+                        <td className="p-4">{u.name}</td>
+                        <td className="p-4 text-slate-400 text-sm">{u.email}</td>
+                        <td className="p-4">
+                          <select
+                            value={u.role}
+                            onChange={(e) => handleRoleChange(u._id, e.target.value)}
+                            disabled={u._id === user?._id}
+                            className="bg-slate-800 text-slate-300 border border-slate-700 rounded p-1"
+                          >
+                            <option value="student">Student</option>
+                            <option value="lecturer">Lecturer</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </td>
+                        <td className="p-4 text-right">
+                          <button onClick={() => handleDeleteUser(u._id)} disabled={u._id === user?._id}
+                            className="text-red-400 hover:text-red-300 disabled:opacity-30 transition p-2">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {users.length === 0 && (
+                      <tr><td colSpan={4} className="p-8 text-center text-slate-500">No users found.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Lectures & Courses Monitor */}
+          {activeTab === 'courses' && (
+            <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+              <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center gap-3">
+                <span className="text-emerald-400 text-lg">📚</span>
+                <h2 className="text-lg sm:text-xl font-bold text-white">Lectures & Courses Monitor</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-slate-300">
+                  <thead className="bg-slate-950 text-slate-400 text-sm">
+                    <tr>
+                      <th className="p-4 font-medium">Course Title</th>
+                      <th className="p-4 font-medium">Lecturer</th>
+                      <th className="p-4 font-medium text-center">Enrolled Students</th>
+                      <th className="p-4 font-medium text-center">Simulations</th>
+                      <th className="p-4 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {courses.map((c) => (
+                      <tr key={c._id} className="hover:bg-slate-800/50 transition">
+                        <td className="p-4 font-medium text-white">{c.title}</td>
+                        <td className="p-4 text-slate-400 text-sm">{c.lecturer?.name || 'Unknown'}</td>
+                        <td className="p-4 text-center text-slate-400">{c.students?.length || 0}</td>
+                        <td className="p-4 text-center">
+                          <span className="bg-sky-500/10 text-sky-400 border border-sky-500/20 text-xs px-2.5 py-1 rounded-full font-medium">
+                            {c.simulations?.length || 0} Sims
+                          </span>
+                        </td>
+                        <td className="p-4 text-right">
+                          <button 
+                            onClick={() => handleDeleteCourse(c._id)}
+                            className="text-red-400 hover:text-red-300 transition p-2"
+                            title="Delete Course"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {courses.length === 0 && (
+                      <tr><td colSpan={5} className="p-8 text-center text-slate-500">No courses found.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Simulation Engagement */}
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
-            <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center gap-3">
-              <Activity className="text-emerald-400 w-5 h-5 sm:w-6 sm:h-6" />
-              <h2 className="text-lg sm:text-xl font-bold text-white">Simulation Engagement</h2>
-            </div>
-            <div className="p-6 space-y-4">
-              {stats.map((stat, idx) => (
-                <div key={idx} className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
-                  <div>
-                    <h3 className="font-bold text-white capitalize">
-                      {sceneLabels[stat.simulationName] || stat.simulationName}
-                    </h3>
-                    <p className="text-sm text-slate-400">{stat.userCount} unique user(s)</p>
+          {activeTab === 'simulations' && (
+            <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+              <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center gap-3">
+                <Activity className="text-emerald-400 w-5 h-5 sm:w-6 sm:h-6" />
+                <h2 className="text-lg sm:text-xl font-bold text-white">Simulation Engagement</h2>
+              </div>
+              <div className="p-6 space-y-4">
+                {statsData?.simulationStats.map((stat, idx) => (
+                  <div key={idx} className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
+                    <div>
+                      <h3 className="font-bold text-white capitalize">
+                        {sceneLabels[stat.simulationName] || stat.simulationName}
+                      </h3>
+                      <p className="text-sm text-slate-400">{stat.userCount} unique user(s)</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-emerald-400">{formatTime(stat.totalTimeSeconds)}</div>
+                      <p className="text-xs text-slate-500">Total time spent</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xl font-bold text-emerald-400">{formatTime(stat.totalTimeSeconds)}</div>
-                    <p className="text-xs text-slate-500">Total time spent</p>
+                ))}
+                {statsData?.simulationStats.length === 0 && (
+                  <div className="text-center text-slate-500 py-8">
+                    No engagement data yet. Users must play simulations to generate stats.
                   </div>
-                </div>
-              ))}
-              {stats.length === 0 && (
-                <div className="text-center text-slate-500 py-8">
-                  No engagement data yet. Users must play simulations to generate stats.
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
         </div>
       </div>
     </div>

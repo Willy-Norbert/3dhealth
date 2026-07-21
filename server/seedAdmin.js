@@ -1,16 +1,4 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
-import User from './models/User.js';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({ path: path.join(__dirname, '../.env') });
-
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://irabaruta:01402@mydb.qhgx1yd.mongodb.net/myproject?appName=mydb';
+NPgodb.net/myproject?appName=mydb';
 
 const seedAdmin = async () => {
   try {

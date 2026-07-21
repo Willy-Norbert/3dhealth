@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, Html, useProgress, ContactShadows } from '@react-three/drei';
 import { EffectComposer, Bloom, ToneMapping } from '@react-three/postprocessing';
 import { Leva } from 'leva';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams, Navigate } from 'react-router-dom';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 
@@ -32,10 +32,31 @@ function Loader() {
 }
 
 export default function VRExperience() {
-  const [selectedScene, setSelectedScene] = useState('ward');
-  // sidebarExpanded: on mobile, false = icon-only strip, true = full names panel
+  const [searchParams] = useSearchParams();
+  const initialSim = searchParams.get('sim');
+  const [selectedScene, setSelectedScene] = useState(initialSim || 'ward');
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const user = useAuthStore((state) => state.user);
+  const [allowedSims, setAllowedSims] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    const cid = searchParams.get('courseId');
+    if (user?.role === 'student' && cid) {
+      fetch(`http://localhost:5000/api/courses/${cid}`, {
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.simulations) setAllowedSims(data.simulations);
+      })
+      .catch(console.error);
+    }
+  }, [user, searchParams]);
+
+  // Students should not access the VRExperience page directly without a course context
+  if (user?.role === 'student' && !searchParams.get('courseId')) {
+    return <Navigate to="/dashboard/student" replace />;
+  }
 
   // Progress tracking
   useEffect(() => {
@@ -86,7 +107,7 @@ export default function VRExperience() {
 
         {/* Scene buttons */}
         <div className="flex-1 overflow-y-auto py-3 space-y-1 px-2">
-          {scenes.map((scene) => {
+          {scenes.filter(scene => user?.role !== 'student' || !searchParams.get('courseId') || scene.id === searchParams.get('sim')).map((scene) => {
             const isActive = selectedScene === scene.id;
             return (
               <button
@@ -156,15 +177,15 @@ export default function VRExperience() {
           </Canvas>
         </div>
 
-        {/* Auth Wall */}
+        {/* Auth Wall – Friendly preview for guests */}
         {!user && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/40 p-4">
-            <div className="glass-dark p-6 sm:p-10 rounded-3xl border border-white/10 text-center max-w-md shadow-2xl">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">Access Restricted</h2>
-              <p className="text-slate-300 mb-6 text-sm sm:text-base">
-                You must have a registered account to view and interact with our premium medical VR simulations.
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/30 p-4">
+            <div className="glass-dark p-8 sm:p-12 rounded-3xl border border-white/10 text-center max-w-lg shadow-2xl">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">Explore Our Simulations</h2>
+              <p className="text-slate-300 mb-6 text-base">
+                Discover the range of medical VR experiences we offer. To launch a simulation you need to be logged in.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
                 <Link to="/login" className="bg-sky-500 text-slate-950 px-6 py-3 rounded-xl font-bold hover:bg-sky-400 transition shadow-[0_0_20px_rgba(14,165,233,0.3)]">
                   Log In
                 </Link>
@@ -172,9 +193,19 @@ export default function VRExperience() {
                   Create Account
                 </Link>
               </div>
+              {/* Sample preview of available simulations */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
+                {scenes.slice(0,4).map((scene) => (
+                  <div key={scene.id} className="flex flex-col items-center p-2 bg-slate-800 rounded-lg">
+                    <span className="text-2xl mb-1">{scene.emoji}</span>
+                    <span className="text-sm text-slate-300">{scene.name}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
+
 
         {/* Hint overlay (desktop only) */}
         {user && (

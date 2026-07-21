@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { LogOut, Lock, LayoutDashboard, ChevronDown, Stethoscope, Home, Menu, X } from 'lucide-react';
+import { LogOut, Lock, LayoutDashboard, ChevronDown, Stethoscope, Home, Menu, X, BookOpen, Eye, EyeOff } from 'lucide-react';
 
 function ChangePasswordModal({ onClose, token }: { onClose: () => void; token: string }) {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -9,6 +9,10 @@ function ChangePasswordModal({ onClose, token }: { onClose: () => void; token: s
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,13 +41,66 @@ function ChangePasswordModal({ onClose, token }: { onClose: () => void; token: s
         {error && <div className="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
         {success && <div className="bg-green-500/20 border border-green-500 text-green-300 px-4 py-3 rounded-xl mb-4 text-sm">{success}</div>}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {[['Current Password', currentPassword, setCurrentPassword], ['New Password', newPassword, setNewPassword], ['Confirm New Password', confirm, setConfirm]].map(([label, val, setter]: any) => (
-            <div key={label as string}>
-              <label className="block text-sm font-medium text-slate-400 mb-1">{label}</label>
-              <input type="password" required value={val} onChange={e => setter(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition" />
+          
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-1">Current Password</label>
+            <div className="relative">
+              <input 
+                type={showCurrent ? "text" : "password"} 
+                required 
+                value={currentPassword} 
+                onChange={e => setCurrentPassword(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-4 pr-12 py-3 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition" 
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrent(!showCurrent)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition"
+              >
+                {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
-          ))}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-1">New Password</label>
+            <div className="relative">
+              <input 
+                type={showNew ? "text" : "password"} 
+                required 
+                value={newPassword} 
+                onChange={e => setNewPassword(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-4 pr-12 py-3 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition" 
+              />
+              <button
+                type="button"
+                onClick={() => setShowNew(!showNew)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition"
+              >
+                {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-1">Confirm New Password</label>
+            <div className="relative">
+              <input 
+                type={showConfirm ? "text" : "password"} 
+                required 
+                value={confirm} 
+                onChange={e => setConfirm(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-4 pr-12 py-3 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition" 
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition"
+              >
+                {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" className="flex-1 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-3 rounded-xl transition">Update</button>
             <button type="button" onClick={onClose} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl transition">Cancel</button>
@@ -78,9 +135,20 @@ export default function MainLayout() {
   const handleLogout = () => { logout(); setDropdownOpen(false); setMobileMenuOpen(false); navigate('/'); };
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
 
+  const getDashboardPath = () => {
+    if (!user) return '/login';
+    if (user.role === 'admin') return '/dashboard/admin';
+    if (user.role === 'lecturer') return '/dashboard/lecturer';
+    return '/dashboard/student';
+  };
+
+  const isStudent = user?.role === 'student';
   const navLinks = [
     { to: '/', label: 'Home', icon: Home },
-    { to: '/vr-experience', label: 'VR Simulations', icon: Stethoscope },
+    ...(user ? [{ to: getDashboardPath(), label: 'Dashboard', icon: LayoutDashboard }] : []),
+    ...(isStudent ? [{ to: '/dashboard/student/browse', label: 'Browse Courses', icon: BookOpen }] : []),
+    // Show the Simulations link only for admins and lecturers
+    ...(!isStudent ? [{ to: '/vr-experience', label: 'Simulations', icon: Stethoscope }] : []),
   ];
 
   return (
@@ -121,12 +189,12 @@ export default function MainLayout() {
                         <p className="text-xs text-slate-400 truncate">{user.email}</p>
                       </div>
                     </div>
-                    <span className={`mt-2 inline-block text-xs px-2 py-0.5 rounded-full ${user.isAdmin ? 'bg-purple-500/20 text-purple-400' : 'bg-sky-500/20 text-sky-400'}`}>
-                      {user.isAdmin ? '⭐ Administrator' : '🎓 Student'}
+                    <span className={`mt-2 inline-block text-xs px-2 py-0.5 rounded-full ${user.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : user.role === 'lecturer' ? 'bg-orange-500/20 text-orange-400' : 'bg-sky-500/20 text-sky-400'}`}>
+                      {user.role === 'admin' ? '⭐ Administrator' : user.role === 'lecturer' ? '📚 Lecturer' : '🎓 Student'}
                     </span>
                   </div>
                   <div className="py-2">
-                    {user.isAdmin && (
+                    {user.role === 'admin' && (
                       <Link to="/dashboard/admin" onClick={() => setDropdownOpen(false)}
                         className="flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition">
                         <LayoutDashboard className="w-4 h-4 text-purple-400" /> Admin Dashboard
@@ -175,7 +243,7 @@ export default function MainLayout() {
                 <l.icon className="w-4 h-4" /> {l.label}
               </Link>
             ))}
-            {user?.isAdmin && (
+            {user?.role === 'admin' && (
               <Link to="/dashboard/admin"
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-300 hover:bg-slate-800 transition">
                 <LayoutDashboard className="w-4 h-4 text-purple-400" /> Admin Dashboard
@@ -190,7 +258,7 @@ export default function MainLayout() {
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white font-bold">{initials}</div>
                 <div>
                   <p className="font-semibold text-white text-sm">{user.name}</p>
-                  <p className="text-xs text-slate-400">{user.isAdmin ? '⭐ Admin' : '🎓 Student'}</p>
+                  <p className="text-xs text-slate-400">{user.role === 'admin' ? '⭐ Admin' : user.role === 'lecturer' ? '📚 Lecturer' : '🎓 Student'}</p>
                 </div>
               </div>
               <button onClick={() => { setShowChangePassword(true); setMobileMenuOpen(false); }}
@@ -256,6 +324,74 @@ export default function MainLayout() {
 
       {/* Spacer so content doesn't hide behind bottom nav on mobile */}
       <div className="md:hidden h-16" />
+
+      {/* Floating Progress Circle */}
+      {(() => {
+        const { pathname, search } = location;
+        const searchParams = new URLSearchParams(search);
+        let currentCourseId = searchParams.get('courseId');
+        if (!currentCourseId) {
+          const match = pathname.match(/\/course\/([a-f\d]{24})/i);
+          if (match) currentCourseId = match[1];
+        }
+
+        const [floatingProgress, setFloatingProgress] = useState<{ progressPercentage: number; isFinished: boolean } | null>(null);
+
+        useEffect(() => {
+          if (!user || user.role !== 'student' || !currentCourseId) {
+            setFloatingProgress(null);
+            return;
+          }
+
+          const fetchProgress = async () => {
+            try {
+              const res = await fetch(`http://localhost:5000/api/courses/${currentCourseId}/progress`, {
+                headers: { 'Authorization': `Bearer ${user.token}` }
+              });
+              if (res.ok) {
+                const data = await res.json();
+                const percentage = Math.min(100, Math.max(0, data.progressPercentage || 0));
+                setFloatingProgress({
+                  progressPercentage: percentage,
+                  isFinished: percentage === 100
+                });
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          };
+
+          fetchProgress();
+          const interval = setInterval(fetchProgress, 10000);
+          return () => clearInterval(interval);
+        }, [currentCourseId, user]);
+
+        if (!floatingProgress) return null;
+
+        return (
+          <div className="fixed bottom-20 right-6 md:bottom-8 md:right-8 z-[150] flex flex-col items-center bg-slate-900/95 backdrop-blur-md border border-slate-800 p-2.5 rounded-full shadow-[0_0_30px_rgba(0,0,0,0.6)] group transition hover:border-sky-500/50 hover:scale-105 duration-200">
+            <div className="relative w-14 h-14 flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle cx="28" cy="28" r="24" fill="transparent" stroke="currentColor" strokeWidth="4.5" className="text-slate-800" />
+                <circle 
+                  cx="28" cy="28" r="24" fill="transparent" stroke="currentColor" strokeWidth="4.5" 
+                  className={floatingProgress.isFinished ? "text-emerald-500 transition-all duration-1000" : "text-sky-500 transition-all duration-1000"}
+                  strokeDasharray={`${2 * Math.PI * 24}`}
+                  strokeDashoffset={`${2 * Math.PI * 24 * (1 - floatingProgress.progressPercentage / 100)}`}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span className={`absolute text-xs font-black ${floatingProgress.isFinished ? 'text-emerald-400' : 'text-white'}`}>
+                {floatingProgress.progressPercentage}%
+              </span>
+            </div>
+            {/* Hover Tooltip */}
+            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition duration-200 whitespace-nowrap shadow-xl">
+              {floatingProgress.isFinished ? '🎉 Course Completed!' : '📚 Course Progress'}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

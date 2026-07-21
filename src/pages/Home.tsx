@@ -61,7 +61,7 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <h1 className="text-5xl lg:text-7xl font-medium tracking-tight text-white leading-tight">
-              Next-Gen <span className="text-sky-400 font-semibold">Medical</span> Training in VR
+              Next-Gen <span className="text-sky-400 font-semibold">Medical</span> Courses in VR
             </h1>
             <p className="text-lg text-slate-300 max-w-2xl">
               Experience highly immersive and interactive healthcare simulations. Practice life-saving procedures in a risk-free virtual environment.
@@ -71,7 +71,7 @@ export default function Home() {
                 <PlayCircle className="w-5 h-5" /> Start Simulation
               </Link>
               <Link to="/login" className="bg-slate-900/80 text-slate-300 border border-slate-700 px-8 py-3 rounded-full font-medium hover:bg-slate-800 transition">
-                Student Portal
+                Go to Dashboard
               </Link>
             </div>
           </motion.div>
@@ -100,6 +100,71 @@ export default function Home() {
               <p className="text-slate-400">{feature.desc}</p>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* New Course Content Section */}
+      <section className="w-full bg-slate-950 py-24 border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-white mb-4">Structured Course Content</h2>
+            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+              Our new platform update introduces structured courses, allowing lecturers to curate specific VR simulations and interactive quizzes for a comprehensive learning journey.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8">
+              <div className="flex gap-4">
+                <div className="w-12 h-12 bg-sky-500/20 rounded-xl flex items-center justify-center shrink-0">
+                  <span className="text-2xl">📚</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">Lecturer-Curated Courses</h3>
+                  <p className="text-slate-400">Lecturers can now create custom courses and assign specific VR simulation environments to their students, ensuring focused and relevant training.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center shrink-0">
+                  <span className="text-2xl">📝</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">Interactive Quizzes</h3>
+                  <p className="text-slate-400">Test your knowledge immediately after completing a simulation with integrated quizzes, designed to reinforce critical medical concepts.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center shrink-0">
+                  <span className="text-2xl">📊</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">Progress Tracking</h3>
+                  <p className="text-slate-400">Both students and lecturers can monitor learning progress, view quiz scores, and track time spent in VR scenarios through the new role-based dashboards.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <div className="absolute -inset-4 bg-gradient-to-r from-sky-500 to-purple-500 opacity-20 blur-xl rounded-full"></div>
+              <div className="relative bg-slate-900 border border-slate-700 p-6 rounded-2xl shadow-2xl">
+                <h4 className="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">Sample Course: Advanced Anatomy</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
+                    <span className="text-sm font-medium text-slate-300">1. Operating Room Intro</span>
+                    <span className="text-xs bg-sky-500/20 text-sky-400 px-2 py-1 rounded">VR Sim</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
+                    <span className="text-sm font-medium text-slate-300">2. Surgical Instruments Quiz</span>
+                    <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">Quiz</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
+                    <span className="text-sm font-medium text-slate-300">3. Emergency Response</span>
+                    <span className="text-xs bg-sky-500/20 text-sky-400 px-2 py-1 rounded">VR Sim</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </div>

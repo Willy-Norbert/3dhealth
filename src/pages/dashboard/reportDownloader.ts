@@ -7,7 +7,7 @@ interface UserItem {
   _id: string;
   name: string;
   email: string;
-  isAdmin: boolean;
+  role: 'student' | 'lecturer' | 'admin';
   createdAt: string;
 }
 
@@ -45,7 +45,7 @@ export function downloadCSV(users: UserItem[], stats: Stat[]) {
   rows.push('');
   rows.push('USERS');
   rows.push('Name,Email,Role,Joined');
-  users.forEach(u => rows.push(`"${u.name}","${u.email}","${u.isAdmin ? 'Admin' : 'Student'}","${new Date(u.createdAt).toLocaleDateString()}"`));
+  users.forEach(u => rows.push(`"${u.name}","${u.email}","${u.role}","${new Date(u.createdAt).toLocaleDateString()}"`));
   rows.push('');
   rows.push('SIMULATION ENGAGEMENT');
   rows.push('Simulation,Unique Users,Total Time,Avg Time Per User');
@@ -66,7 +66,7 @@ export function downloadExcel(users: UserItem[], stats: Stat[]) {
   // Users Sheet
   const usersData = [
     ['Name', 'Email', 'Role', 'Joined'],
-    ...users.map(u => [u.name, u.email, u.isAdmin ? 'Admin' : 'Student', new Date(u.createdAt).toLocaleDateString()])
+    ...users.map(u => [u.name, u.email, u.role, new Date(u.createdAt).toLocaleDateString()])
   ];
   const ws1 = XLSX.utils.aoa_to_sheet(usersData);
   ws1['!cols'] = [{ wch: 24 }, { wch: 32 }, { wch: 12 }, { wch: 16 }];
@@ -133,7 +133,7 @@ export async function downloadDOCX(users: UserItem[], stats: Stat[], adminName: 
     rows: [
       new TableRow({ children: ['Name', 'Email', 'Role', 'Joined'].map(h => makeCell(h, true)) }),
       ...users.map(u => new TableRow({
-        children: [u.name, u.email, u.isAdmin ? 'Admin' : 'Student', new Date(u.createdAt).toLocaleDateString()].map(v => makeCell(v))
+        children: [u.name, u.email, u.role, new Date(u.createdAt).toLocaleDateString()].map(v => makeCell(v))
       }))
     ]
   });
