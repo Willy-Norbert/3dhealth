@@ -4,6 +4,7 @@ import { OrbitControls, Environment, Html, useProgress, ContactShadows } from '@
 import { EffectComposer, Bloom, ToneMapping } from '@react-three/postprocessing';
 import { Leva } from 'leva';
 import { Link } from 'react-router-dom';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 
 import HospitalReception from '../vr/scenes/HospitalReception';
@@ -15,6 +16,16 @@ import Pharmacy from '../vr/scenes/Pharmacy';
 import RadiologyRoom from '../vr/scenes/RadiologyRoom';
 import Ambulance from '../vr/scenes/Ambulance';
 
+const scenes = [
+  { id: 'reception', name: 'Hospital Reception', emoji: '🏥' },
+  { id: 'er',        name: 'Emergency Room',     emoji: '🚨' },
+  { id: 'ward',      name: 'Patient Ward',        emoji: '🛏️' },
+  { id: 'cpr',       name: 'CPR Training',        emoji: '❤️' },
+  { id: 'or',        name: 'Operating Room',      emoji: '🔬' },
+  { id: 'radiology', name: 'Radiology (CT-Scan)', emoji: '📡' },
+  { id: 'ambulance', name: 'Ambulance Unit',      emoji: '🚑' },
+];
+
 function Loader() {
   const { progress } = useProgress();
   return <Html center className="text-white text-xl font-bold">{progress.toFixed(0)} % loaded</Html>;
@@ -22,87 +33,111 @@ function Loader() {
 
 export default function VRExperience() {
   const [selectedScene, setSelectedScene] = useState('ward');
+  // sidebarExpanded: on mobile, false = icon-only strip, true = full names panel
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const user = useAuthStore((state) => state.user);
 
-  // Progress Tracking
+  // Progress tracking
   useEffect(() => {
-    if (!user) return; // Don't track if not logged in
-    
-    // Ping the backend every 10 seconds to add watch time
+    if (!user) return;
     const interval = setInterval(async () => {
       try {
         await fetch('http://localhost:5000/api/progress/track', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`
-          },
-          body: JSON.stringify({
-            simulationName: selectedScene,
-            secondsToAdd: 10
-          })
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
+          body: JSON.stringify({ simulationName: selectedScene, secondsToAdd: 10 }),
         });
-      } catch (error) {
-        console.error('Failed to track progress', error);
-      }
+      } catch (e) { /* silent */ }
     }, 10000);
-
     return () => clearInterval(interval);
   }, [user, selectedScene]);
 
   const renderScene = () => {
     switch (selectedScene) {
       case 'reception': return <HospitalReception />;
-      case 'ward': return <PatientWard />;
-      case 'cpr': return <CPRRoom />;
-      case 'or': return <OperatingRoom />;
-      case 'er': return <EmergencyRoom />;
-      case 'pharmacy': return <Pharmacy />;
+      case 'ward':      return <PatientWard />;
+      case 'cpr':       return <CPRRoom />;
+      case 'or':        return <OperatingRoom />;
+      case 'er':        return <EmergencyRoom />;
+      case 'pharmacy':  return <Pharmacy />;
       case 'radiology': return <RadiologyRoom />;
       case 'ambulance': return <Ambulance />;
-      default: return <PatientWard />;
+      default:          return <PatientWard />;
     }
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex">
-      <Leva collapsed />
+    <div className="flex h-[calc(100vh-4rem)]">
+      <Leva collapsed hidden />
 
-      {/* Sidebar - Simulation Selector */}
-      <div className="w-80 bg-slate-950 border-r border-slate-800 flex flex-col z-10">
-        <div className="p-6 border-b border-slate-800">
-          <h2 className="text-xl font-bold text-white">Simulations</h2>
-          <p className="text-sm text-slate-400">Select a scenario to start</p>
+      {/* ── SIDEBAR (always visible on all screen sizes) ── */}
+      <aside
+        className={`
+          relative flex flex-col bg-slate-950 border-r border-slate-800 z-10 shrink-0
+          transition-all duration-300 ease-in-out
+          ${sidebarExpanded ? 'w-64' : 'w-16'}
+        `}
+      >
+        {/* Header — only shown when expanded */}
+        <div className={`border-b border-slate-800 overflow-hidden transition-all duration-300 ${sidebarExpanded ? 'p-4 opacity-100' : 'p-0 h-0 opacity-0'}`}>
+          <h2 className="text-base font-bold text-white whitespace-nowrap">Simulations</h2>
+          <p className="text-xs text-slate-400 mt-0.5 whitespace-nowrap">Select a scenario</p>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {[
-            { id: 'reception', name: 'Hospital Reception' },
-            { id: 'er', name: 'Emergency Room' },
-            { id: 'ward', name: 'Patient Ward' },
-            { id: 'cpr', name: 'CPR Training Room' },
-            { id: 'or', name: 'Operating Room' },
-            { id: 'radiology', name: 'Radiology (CT-Scan)' },
-            { id: 'ambulance', name: 'Ambulance Unit' },
-          ].map((scene) => (
-            <button
-              key={scene.id}
-              onClick={() => setSelectedScene(scene.id)}
-              className={`w-full text-left px-4 py-3 rounded-xl transition ${
-                selectedScene === scene.id 
-                  ? 'bg-sky-500 text-slate-900 font-bold shadow-md shadow-sky-500/20' 
-                  : 'hover:bg-slate-900 text-slate-300'
-              }`}
-            >
-              {scene.name}
-            </button>
-          ))}
-        </div>
-      </div>
 
-      {/* 3D Canvas Area */}
+        {/* Scene buttons */}
+        <div className="flex-1 overflow-y-auto py-3 space-y-1 px-2">
+          {scenes.map((scene) => {
+            const isActive = selectedScene === scene.id;
+            return (
+              <button
+                key={scene.id}
+                onClick={() => setSelectedScene(scene.id)}
+                title={scene.name}
+                className={`
+                  w-full flex items-center gap-3 rounded-xl transition-all duration-200
+                  ${sidebarExpanded ? 'px-3 py-3' : 'px-0 py-3 justify-center'}
+                  ${isActive
+                    ? 'bg-sky-500 text-slate-900 font-bold shadow-md shadow-sky-500/30'
+                    : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                  }
+                `}
+              >
+                {/* Emoji icon — always visible */}
+                <span className={`text-xl leading-none shrink-0 ${sidebarExpanded ? '' : 'mx-auto'}`}>
+                  {scene.emoji}
+                </span>
+                {/* Name — only when expanded */}
+                <span
+                  className={`text-sm whitespace-nowrap overflow-hidden transition-all duration-300 ${sidebarExpanded ? 'max-w-xs opacity-100' : 'max-w-0 opacity-0'}`}
+                >
+                  {scene.name}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Toggle button at bottom */}
+        <button
+          onClick={() => setSidebarExpanded(v => !v)}
+          className="shrink-0 flex items-center justify-center gap-2 border-t border-slate-800 py-3 text-slate-400 hover:text-white hover:bg-slate-900 transition"
+          title={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+        >
+          {sidebarExpanded ? (
+            <>
+              <ChevronLeft className="w-4 h-4" />
+              <span className="text-xs whitespace-nowrap">Collapse</span>
+            </>
+          ) : (
+            <ChevronRight className="w-4 h-4" />
+          )}
+        </button>
+      </aside>
+
+      {/* ── MAIN CANVAS AREA ── */}
       <div className="flex-1 bg-gray-900 relative overflow-hidden">
-        
-        {/* If user is NOT logged in, apply blur and overlay */}
+
+        {/* Canvas (blurred for guests) */}
         <div className={`absolute inset-0 z-0 transition-all duration-500 ${!user ? 'blur-xl scale-105 opacity-50' : ''}`}>
           <Canvas shadows camera={{ position: [5, 3, 5], fov: 60 }}>
             <color attach="background" args={['#0f172a']} />
@@ -111,11 +146,9 @@ export default function VRExperience() {
             <Environment preset="warehouse" background blur={0.8} />
             <OrbitControls makeDefault dampingFactor={0.05} />
             <ContactShadows resolution={1024} scale={20} blur={2} opacity={0.5} far={10} color="#000000" />
-
             <Suspense fallback={<Loader />}>
               {renderScene()}
             </Suspense>
-
             <EffectComposer>
               <Bloom luminanceThreshold={1} mipmapBlur intensity={1.5} />
               <ToneMapping />
@@ -123,19 +156,19 @@ export default function VRExperience() {
           </Canvas>
         </div>
 
-        {/* Authentication Wall Overlay */}
+        {/* Auth Wall */}
         {!user && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/40">
-            <div className="glass-dark p-10 rounded-3xl border border-white/10 text-center max-w-md shadow-2xl">
-              <h2 className="text-3xl font-bold text-white mb-4">Access Restricted</h2>
-              <p className="text-slate-300 mb-8">
-                You must have a registered account to view and interact with our premium medical VR simulations. Your progress will be tracked for certification.
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/40 p-4">
+            <div className="glass-dark p-6 sm:p-10 rounded-3xl border border-white/10 text-center max-w-md shadow-2xl">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">Access Restricted</h2>
+              <p className="text-slate-300 mb-6 text-sm sm:text-base">
+                You must have a registered account to view and interact with our premium medical VR simulations.
               </p>
-              <div className="flex gap-4 justify-center">
-                <Link to="/login" className="bg-sky-500 text-slate-950 px-8 py-3 rounded-xl font-bold hover:bg-sky-400 transition shadow-[0_0_20px_rgba(14,165,233,0.3)]">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link to="/login" className="bg-sky-500 text-slate-950 px-6 py-3 rounded-xl font-bold hover:bg-sky-400 transition shadow-[0_0_20px_rgba(14,165,233,0.3)]">
                   Log In
                 </Link>
-                <Link to="/login" className="bg-slate-800 text-white border border-slate-700 px-8 py-3 rounded-xl font-bold hover:bg-slate-700 transition">
+                <Link to="/login" className="bg-slate-800 text-white border border-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-700 transition">
                   Create Account
                 </Link>
               </div>
@@ -143,10 +176,10 @@ export default function VRExperience() {
           </div>
         )}
 
-        {/* Overlay UI (only show if logged in) */}
+        {/* Hint overlay (desktop only) */}
         {user && (
-          <div className="absolute top-6 right-6 flex gap-4 z-10">
-            <div className="bg-black/50 backdrop-blur-md text-white px-4 py-2 rounded-lg text-sm border border-white/10 pointer-events-none">
+          <div className="absolute top-4 right-4 z-10 hidden sm:block">
+            <div className="bg-black/50 backdrop-blur-md text-white px-3 py-1.5 rounded-lg text-xs border border-white/10 pointer-events-none">
               Use mouse to orbit • Scroll to zoom
             </div>
           </div>

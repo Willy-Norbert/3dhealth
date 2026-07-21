@@ -5,6 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Stage } from '@react-three/drei';
 import { Suspense } from 'react';
 
+
 // Pre-load the hospital model
 useGLTF.preload('/models/hospital.glb');
 
@@ -16,54 +17,66 @@ function HospitalModel() {
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center">
-      {/* Hero Section */}
-      {/* Swapped order: 3D Model on Left (lg:flex-row-reverse for right-side text, or just reorder elements) */}
-      <section className="w-full max-w-7xl px-6 py-24 flex flex-col lg:flex-row items-center gap-12">
+    <div className="flex flex-col items-center pb-16 md:pb-0">
+      {/* Hero Section — full bleed with image.png background */}
+      <section
+        className="w-full relative flex flex-col lg:flex-row items-center gap-12 px-6 py-24"
+        style={{
+          backgroundImage: 'url(/image.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        {/* Dark overlay so text stays readable */}
+        <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]" />
         
-        {/* LEFT SIDE: 3D Hospital Model */}
-        <motion.div 
-          className="flex-1 relative w-full h-[400px] lg:h-[600px]"
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="absolute inset-0 w-full h-full">
-            {/* 3D Canvas with transparent background */}
-            <Canvas shadows camera={{ position: [0, 0, 10], fov: 45 }}>
-              <Suspense fallback={null}>
-                {/* Stage automatically centers, scales, lights, and frames ANY 3D model perfectly */}
-                <Stage environment="city" intensity={0.6} adjustCamera>
-                  <HospitalModel />
-                </Stage>
-              </Suspense>
-              <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={1.5} makeDefault />
-            </Canvas>
-          </div>
-        </motion.div>
+        {/* Content above overlay */}
+        <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col lg:flex-row items-center gap-12">
 
-        {/* RIGHT SIDE: Text and Actions */}
-        <motion.div 
-          className="flex-1 space-y-6"
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <h1 className="text-5xl lg:text-7xl font-medium tracking-tight text-white leading-tight">
-            Next-Gen <span className="text-sky-400 font-semibold">Medical</span> Training in VR
-          </h1>
-          <p className="text-lg text-slate-400 max-w-2xl">
-            Experience highly immersive and interactive healthcare simulations. Practice life-saving procedures in a risk-free virtual environment.
-          </p>
-          <div className="flex gap-4 pt-4">
-            <Link to="/vr-experience" className="bg-sky-500 text-slate-950 px-8 py-3 rounded-full font-medium hover:bg-sky-400 transition shadow-[0_0_20px_rgba(14,165,233,0.5)] flex items-center gap-2">
-              <PlayCircle className="w-5 h-5" /> Start Simulation
-            </Link>
-            <Link to="/login" className="bg-slate-900 text-slate-300 border border-slate-700 px-8 py-3 rounded-full font-medium hover:bg-slate-800 transition shadow-sm">
-              Student Portal
-            </Link>
-          </div>
-        </motion.div>
+          {/* LEFT SIDE: 3D Hospital Model */}
+          <motion.div 
+            className="flex-1 relative w-full h-[400px] lg:h-[600px]"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="absolute inset-0 w-full h-full">
+              <Canvas shadows camera={{ position: [0, 0, 10], fov: 45 }}>
+                <Suspense fallback={null}>
+                  <Stage environment="city" intensity={0.6} adjustCamera>
+                    <HospitalModel />
+                  </Stage>
+                </Suspense>
+                <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={1.5} makeDefault />
+              </Canvas>
+            </div>
+          </motion.div>
+
+          {/* RIGHT SIDE: Text and Actions */}
+          <motion.div 
+            className="flex-1 space-y-6"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <h1 className="text-5xl lg:text-7xl font-medium tracking-tight text-white leading-tight">
+              Next-Gen <span className="text-sky-400 font-semibold">Medical</span> Training in VR
+            </h1>
+            <p className="text-lg text-slate-300 max-w-2xl">
+              Experience highly immersive and interactive healthcare simulations. Practice life-saving procedures in a risk-free virtual environment.
+            </p>
+            <div className="flex gap-4 pt-4">
+              <Link to="/vr-experience" className="bg-sky-500 text-slate-950 px-8 py-3 rounded-full font-medium hover:bg-sky-400 transition shadow-[0_0_20px_rgba(14,165,233,0.5)] flex items-center gap-2">
+                <PlayCircle className="w-5 h-5" /> Start Simulation
+              </Link>
+              <Link to="/login" className="bg-slate-900/80 text-slate-300 border border-slate-700 px-8 py-3 rounded-full font-medium hover:bg-slate-800 transition">
+                Student Portal
+              </Link>
+            </div>
+          </motion.div>
+
+        </div>
       </section>
 
       {/* Features */}

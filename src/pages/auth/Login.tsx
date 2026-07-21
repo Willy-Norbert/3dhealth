@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
 export default function Login() {
@@ -46,9 +45,7 @@ export default function Login() {
       
       <div className="relative z-10 w-full max-w-md p-8 glass-dark text-white rounded-3xl shadow-2xl border border-white/20">
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-sky-500 p-3 rounded-xl mb-4">
-            <Stethoscope className="w-8 h-8 text-slate-950" />
-          </div>
+          <img src="/logo.png" alt="VR HealthEd" className="h-16 w-auto object-contain mb-4" />
           <h2 className="text-3xl font-bold">{isRegister ? 'Create Account' : 'Welcome Back'}</h2>
           <p className="text-blue-200 mt-2">
             {isRegister ? 'Join our training platform' : 'Sign in to your training account'}
