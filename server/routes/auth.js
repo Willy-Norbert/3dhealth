@@ -13,7 +13,7 @@ const generateToken = (id) => {
 
 // Register
 router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
   
   try {
     const userExists = await User.findOne({ email });
@@ -22,11 +22,14 @@ router.post('/register', async (req, res) => {
     // First user is admin automatically for demo purposes
     const isFirstUser = (await User.countDocuments({})) === 0;
     
+    let assignedRole = role === 'lecturer' ? 'lecturer' : 'student';
+    if (isFirstUser) assignedRole = 'admin';
+    
     const user = await User.create({
       name,
       email,
       password,
-      isAdmin: isFirstUser
+      role: assignedRole
     });
 
     if (user) {
@@ -34,7 +37,7 @@ router.post('/register', async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        isAdmin: user.isAdmin,
+        role: user.role,
         token: generateToken(user._id),
       });
     } else {
@@ -56,7 +59,7 @@ router.post('/login', async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        isAdmin: user.isAdmin,
+        role: user.role,
         token: generateToken(user._id),
       });
     } else {
@@ -67,7 +70,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-export default router;
 
 // Change Password
 router.put('/change-password', protect, async (req, res) => {
@@ -87,3 +89,18 @@ router.put('/change-password', protect, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+// Get all students (for lecturers to enroll them)
+router.get('/users/students', protect, async (req, res) => {
+  if (req.user.role !== 'lecturer' && req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Not authorized' });
+  }
+  try {
+    const students = await User.find({ role: 'student' }).select('-password');
+    res.json(students);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+export default router;

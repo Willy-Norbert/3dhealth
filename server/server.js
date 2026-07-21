@@ -5,8 +5,16 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import progressRoutes from './routes/progress.js';
 import adminRoutes from './routes/admin.js';
+import courseRoutes from './routes/courses.js';
+import quizRoutes from './routes/quizzes.js';
 
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const app = express();
 
@@ -34,6 +42,8 @@ mongoose.connect(MONGO_URI)
 app.use('/api/auth', authRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/quizzes', quizRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
