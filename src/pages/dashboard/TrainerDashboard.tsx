@@ -11,7 +11,7 @@ interface Course {
   students: any[];
 }
 
-export default function LecturerDashboard() {
+export default function TrainerDashboard() {
   const user = useAuthStore((state) => state.user);
   const [courses, setCourses] = useState<Course[]>([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -63,7 +63,7 @@ export default function LecturerDashboard() {
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-6">
           <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">Lecturer Dashboard</h1>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Trainer Dashboard</h1>
             <p className="text-slate-400 mt-1">Welcome, {user?.name}. Manage your courses and students.</p>
           </div>
           <button 
@@ -129,7 +129,7 @@ export default function LecturerDashboard() {
                   <span className="text-slate-300 font-medium">{course.students.length} Enrolled</span>
                 </span>
                 <Link 
-                  to={`/dashboard/lecturer/course/${course._id}`}
+                  to={`/dashboard/trainer/course/${course._id}`}
                   className="flex items-center gap-2 text-sky-400 hover:text-sky-300 font-medium hover:bg-sky-500/10 px-4 py-2 rounded-lg transition"
                 >
                   <Settings className="w-4 h-4" /> Manage

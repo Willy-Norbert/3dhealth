@@ -38,8 +38,8 @@ export default function Login() {
       login(data);
       if (data.role === 'admin') {
         navigate('/dashboard/admin');
-      } else if (data.role === 'lecturer') {
-        navigate('/dashboard/lecturer');
+      } else if (data.role === 'trainer') {
+        navigate('/dashboard/trainer');
       } else {
         navigate('/dashboard/student');
       }
@@ -89,7 +89,7 @@ export default function Login() {
                   className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition [&>option]:text-slate-900"
                 >
                   <option value="student">Student</option>
-                  <option value="lecturer">Lecturer</option>
+                  <option value="trainer">Trainer</option>
                 </select>
               </div>
             </>

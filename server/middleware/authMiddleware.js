@@ -25,10 +25,10 @@ export const admin = (req, res, next) => {
   }
 };
 
-export const lecturer = (req, res, next) => {
-  if (req.user && req.user.role === 'lecturer') {
+export const trainer = (req, res, next) => {
+  if (req.user && req.user.role === 'trainer') {
     next();
   } else {
-    res.status(401).json({ message: 'Not authorized as a lecturer' });
+    res.status(401).json({ message: 'Not authorized as a trainer' });
   }
 };

@@ -13,7 +13,7 @@ const availableSims = [
   { id: 'ambulance', name: 'Ambulance Unit' },
 ];
 
-export default function CourseDetailLecturer() {
+export default function CourseDetailTrainer() {
   const { courseId } = useParams();
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
@@ -23,6 +23,10 @@ export default function CourseDetailLecturer() {
   const [quizResults, setQuizResults] = useState<any[]>([]);
   const [studentProgress, setStudentProgress] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAnswersModal, setShowAnswersModal] = useState(false);
+  const [selectedQuizAnswers, setSelectedQuizAnswers] = useState<any[]>([]);
+  const [selectedQuizTitle, setSelectedQuizTitle] = useState('');
+  const [answersLoading, setAnswersLoading] = useState(false);
   
   const [showSimModal, setShowSimModal] = useState(false);
   const [showStudentModal, setShowStudentModal] = useState(false);
@@ -62,6 +66,25 @@ export default function CourseDetailLecturer() {
     fetchCourse();
     fetchStudents();
   }, [courseId, user?.token]);
+
+  const handleShowAnswers = async (quizId: string, title?: string) => {
+    setAnswersLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5000/api/quizzes/${quizId}/answers`, {
+        headers: { 'Authorization': `Bearer ${user?.token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch answers');
+      const data = await res.json();
+      setSelectedQuizAnswers(data.questions || []);
+      setSelectedQuizTitle(title || data.title || 'Quiz Answers');
+      setShowAnswersModal(true);
+    } catch (err) {
+      console.error(err);
+      alert('Unable to load answers');
+    } finally {
+      setAnswersLoading(false);
+    }
+  };
 
   const updateCourse = async (updates: any) => {
     try {
@@ -112,7 +135,7 @@ export default function CourseDetailLecturer() {
       <div className="min-h-screen bg-slate-950 p-8 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-white mb-4">Course not found</h2>
-          <Link to="/dashboard/lecturer" className="text-sky-400 hover:underline">Return to Dashboard</Link>
+          <Link to="/dashboard/trainer" className="text-sky-400 hover:underline">Return to Dashboard</Link>
         </div>
       </div>
     );
@@ -135,7 +158,7 @@ export default function CourseDetailLecturer() {
         
         {/* Header */}
         <div className="flex items-center gap-4 border-b border-slate-800 pb-6">
-          <Link to="/dashboard/lecturer" className="p-2 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-white">
+          <Link to="/dashboard/trainer" className="p-2 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-white">
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <div>
@@ -179,7 +202,7 @@ export default function CourseDetailLecturer() {
                     </div>
                     <div className="flex gap-2">
                       <Link 
-                        to={`/dashboard/lecturer/course/${courseId}/quiz/${sim}/create`}
+                        to={`/dashboard/trainer/course/${courseId}/quiz/${sim}/create`}
                         className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 px-4 py-2 rounded-lg font-medium transition text-sm flex items-center"
                       >
                         Create Quiz
@@ -277,6 +300,15 @@ export default function CourseDetailLecturer() {
                             {result.score} / {result.total}
                           </p>
                           <p className="text-xs text-slate-500">{percentage}%</p>
+                          <div className="mt-2 flex justify-end">
+                            <button
+                              onClick={() => handleShowAnswers(result.quiz?._id || result.quiz)}
+                              disabled={answersLoading}
+                              className="text-sm bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-md text-slate-300 border border-slate-700/50 transition"
+                            >
+                              {answersLoading ? 'Loading…' : 'Reveal Answers'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -362,6 +394,34 @@ export default function CourseDetailLecturer() {
               ))}
               {filteredUnenrolled.length === 0 && (
                 <p className="text-center text-slate-500 py-4 text-sm">No students found.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reveal Answers Modal */}
+      {showAnswersModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-3xl shadow-2xl relative">
+            <button onClick={() => setShowAnswersModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
+            <h2 className="text-xl font-bold text-white mb-4">Correct Answers — {selectedQuizTitle}</h2>
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+              {selectedQuizAnswers.length === 0 ? (
+                <p className="text-slate-400">No questions found.</p>
+              ) : (
+                selectedQuizAnswers.map((q: any, i: number) => (
+                  <div key={i} className="bg-slate-800/40 border border-slate-700 p-4 rounded-lg">
+                    <p className="text-slate-200 font-medium">{i + 1}. {q.questionText}</p>
+                    <ul className="mt-2 space-y-2 pl-4 list-disc">
+                      {q.options.map((opt: string, idx: number) => (
+                        <li key={idx} className={`${idx === q.correctOptionIndex ? 'text-emerald-400 font-semibold' : 'text-slate-300'}`}>
+                          {opt} {idx === q.correctOptionIndex && <span className="text-xs text-emerald-300 ml-2">(Correct)</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))
               )}
             </div>
           </div>

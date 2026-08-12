@@ -1,4 +1,4 @@
-NPgodb.net/myproject?appName=mydb';
+// NPgodb.net/myproject?appName=mydb';
 
 const seedAdmin = async () => {
   try {

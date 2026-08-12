@@ -109,7 +109,7 @@ export default function Home() {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">Structured Course Content</h2>
             <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-              Our new platform update introduces structured courses, allowing lecturers to curate specific VR simulations and interactive quizzes for a comprehensive learning journey.
+              Our new platform update introduces structured courses, allowing trainers to curate specific VR simulations and interactive quizzes for a comprehensive learning journey.
             </p>
           </div>
           
@@ -120,8 +120,8 @@ export default function Home() {
                   <span className="text-2xl">📚</span>
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Lecturer-Curated Courses</h3>
-                  <p className="text-slate-400">Lecturers can now create custom courses and assign specific VR simulation environments to their students, ensuring focused and relevant training.</p>
+                  <h3 className="text-xl font-bold text-white mb-2">Trainer-Curated Courses</h3>
+                  <p className="text-slate-400">Trainers can now create custom courses and assign specific VR simulation environments to their students, ensuring focused and relevant training.</p>
                 </div>
               </div>
               <div className="flex gap-4">
@@ -139,7 +139,7 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white mb-2">Progress Tracking</h3>
-                  <p className="text-slate-400">Both students and lecturers can monitor learning progress, view quiz scores, and track time spent in VR scenarios through the new role-based dashboards.</p>
+                  <p className="text-slate-400">Both students and trainers can monitor learning progress, view quiz scores, and track time spent in VR scenarios through the new role-based dashboards.</p>
                 </div>
               </div>
             </div>

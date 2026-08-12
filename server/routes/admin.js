@@ -36,7 +36,7 @@ router.delete('/users/:id', protect, admin, async (req, res) => {
 // Update user role
 router.put('/users/:id/role', protect, admin, async (req, res) => {
   const { role } = req.body;
-  if (!['student', 'lecturer', 'admin'].includes(role)) {
+  if (!['student', 'trainer', 'admin'].includes(role)) {
     return res.status(400).json({ message: 'Invalid role' });
   }
 

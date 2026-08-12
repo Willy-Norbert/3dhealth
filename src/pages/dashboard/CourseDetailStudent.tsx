@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { PlayCircle, FileText, ArrowLeft, BookOpen } from 'lucide-react';
+import { PlayCircle, FileText, ArrowLeft, BookOpen, Lock } from 'lucide-react';
 
 const availableSims = [
   { id: 'reception', name: 'Hospital Reception' },
@@ -21,6 +21,24 @@ export default function CourseDetailStudent() {
   const [courseProgress, setCourseProgress] = useState({ progressPercentage: 0, isFinished: false });
   const [quizResults, setQuizResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Track which simulations have been launched (persisted in localStorage)
+  const launchedKey = `launched_sims_${courseId}_${user?._id}`;
+  const [launchedSims, setLaunchedSims] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(`launched_sims_${courseId}_${user?._id}`);
+      return new Set(saved ? JSON.parse(saved) : []);
+    } catch { return new Set(); }
+  });
+
+  const markSimLaunched = (simId: string) => {
+    setLaunchedSims(prev => {
+      const next = new Set(prev);
+      next.add(simId);
+      try { localStorage.setItem(launchedKey, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -87,9 +105,9 @@ export default function CourseDetailStudent() {
               <p className="text-lg text-slate-400 mt-2">{course.description}</p>
               <p className="text-sm font-medium text-slate-500 mt-4 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-xs text-white">
-                  {(course.lecturer?.name || 'L').charAt(0).toUpperCase()}
+                  {(course.trainer?.name || 'L').charAt(0).toUpperCase()}
                 </span>
-                Lecturer: <span className="text-slate-300">{course.lecturer?.name || 'Unknown'}</span>
+                Trainer: <span className="text-slate-300">{course.trainer?.name || 'Unknown'}</span>
               </p>
             </div>
           </div>
@@ -165,6 +183,7 @@ export default function CourseDetailStudent() {
                   <div className="mt-auto space-y-3 pt-2">
                     <Link 
                       to={`/vr-experience?sim=${sim}&courseId=${courseId}`} 
+                      onClick={() => markSimLaunched(sim)}
                       className="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-4 py-3 rounded-xl flex justify-center items-center gap-2 transition shadow-[0_0_15px_rgba(14,165,233,0.3)]"
                     >
                       <PlayCircle className="w-5 h-5" /> Launch Simulation
@@ -184,6 +203,14 @@ export default function CourseDetailStudent() {
                             <p className="text-center text-xs text-emerald-500/80 font-medium">
                               Score: {quizResultObj.score} / {quizResultObj.total} ({Math.round((quizResultObj.score / quizResultObj.total) * 100)}%)
                             </p>
+                          </div>
+                        );
+                      }
+                      // Only show quiz button if the student has launched the simulation
+                      if (!launchedSims.has(sim)) {
+                        return (
+                          <div className="w-full bg-slate-800/50 border border-slate-700/50 text-slate-500 px-4 py-3 rounded-xl flex justify-center items-center gap-2 text-sm" title="Launch the simulation first to unlock the quiz">
+                            <Lock className="w-4 h-4" /> unlock quiz by launching the simulation
                           </div>
                         );
                       }
@@ -209,7 +236,7 @@ export default function CourseDetailStudent() {
               <div className="col-span-full py-12 text-center bg-slate-900/50 border border-slate-800 rounded-2xl border-dashed">
                 <PlayCircle className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-slate-300 mb-2">No materials yet</h3>
-                <p className="text-slate-500 max-w-md mx-auto">Your lecturer hasn't added any VR simulations to this course yet.</p>
+                <p className="text-slate-500 max-w-md mx-auto">Your trainer hasn't added any VR simulations to this course yet.</p>
               </div>
             )}
           </div>

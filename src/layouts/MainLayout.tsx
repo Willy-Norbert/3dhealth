@@ -138,7 +138,7 @@ export default function MainLayout() {
   const getDashboardPath = () => {
     if (!user) return '/login';
     if (user.role === 'admin') return '/dashboard/admin';
-    if (user.role === 'lecturer') return '/dashboard/lecturer';
+    if (user.role === 'trainer') return '/dashboard/trainer';
     return '/dashboard/student';
   };
 
@@ -147,7 +147,7 @@ export default function MainLayout() {
     { to: '/', label: 'Home', icon: Home },
     ...(user ? [{ to: getDashboardPath(), label: 'Dashboard', icon: LayoutDashboard }] : []),
     ...(isStudent ? [{ to: '/dashboard/student/browse', label: 'Browse Courses', icon: BookOpen }] : []),
-    // Show the Simulations link only for admins and lecturers
+    // Show the Simulations link only for admins and trainers
     ...(!isStudent ? [{ to: '/vr-experience', label: 'Simulations', icon: Stethoscope }] : []),
   ];
 
@@ -189,8 +189,8 @@ export default function MainLayout() {
                         <p className="text-xs text-slate-400 truncate">{user.email}</p>
                       </div>
                     </div>
-                    <span className={`mt-2 inline-block text-xs px-2 py-0.5 rounded-full ${user.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : user.role === 'lecturer' ? 'bg-orange-500/20 text-orange-400' : 'bg-sky-500/20 text-sky-400'}`}>
-                      {user.role === 'admin' ? '⭐ Administrator' : user.role === 'lecturer' ? '📚 Lecturer' : '🎓 Student'}
+                    <span className={`mt-2 inline-block text-xs px-2 py-0.5 rounded-full ${user.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : user.role === 'trainer' ? 'bg-orange-500/20 text-orange-400' : 'bg-sky-500/20 text-sky-400'}`}>
+                      {user.role === 'admin' ? '⭐ Administrator' : user.role === 'trainer' ? '🏋️ Trainer' : '🎓 Student'}
                     </span>
                   </div>
                   <div className="py-2">
@@ -258,7 +258,7 @@ export default function MainLayout() {
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white font-bold">{initials}</div>
                 <div>
                   <p className="font-semibold text-white text-sm">{user.name}</p>
-                  <p className="text-xs text-slate-400">{user.role === 'admin' ? '⭐ Admin' : user.role === 'lecturer' ? '📚 Lecturer' : '🎓 Student'}</p>
+                  <p className="text-xs text-slate-400">{user.role === 'admin' ? '⭐ Admin' : user.role === 'trainer' ? '🏋️ Trainer' : '🎓 Student'}</p>
                 </div>
               </div>
               <button onClick={() => { setShowChangePassword(true); setMobileMenuOpen(false); }}

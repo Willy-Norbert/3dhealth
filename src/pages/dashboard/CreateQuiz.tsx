@@ -90,7 +90,7 @@ export default function CreateQuiz() {
         throw new Error(data.message || 'Failed to create quiz');
       }
 
-      navigate(`/dashboard/lecturer/course/${courseId}`);
+      navigate(`/dashboard/trainercourse/${courseId}`);
     } catch (err: any) {
       setError(err.message);
       setSaving(false);
@@ -103,7 +103,7 @@ export default function CreateQuiz() {
         
         {/* Header */}
         <div className="flex items-center gap-4 border-b border-slate-800 pb-6">
-          <Link to={`/dashboard/lecturer/course/${courseId}`} className="p-2 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-white">
+          <Link to={`/dashboard/trainercourse/${courseId}`} className="p-2 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-white">
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <div>

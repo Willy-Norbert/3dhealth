@@ -8,7 +8,7 @@ interface UserItem {
   _id: string;
   name: string;
   email: string;
-  role: 'student' | 'lecturer' | 'admin';
+  role: 'student' | 'trainer' | 'admin';
   createdAt: string;
 }
 
@@ -382,7 +382,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({ role: newRole })
       });
       if (res.ok) {
-        setUsers(users.map(u => u._id === id ? { ...u, role: newRole as 'student' | 'lecturer' | 'admin' } : u));
+        setUsers(users.map(u => u._id === id ? { ...u, role: newRole as 'student' | 'trainer' | 'admin' } : u));
       }
     } catch (error) {
       console.error('Failed to update role', error);
@@ -591,8 +591,8 @@ export default function AdminDashboard() {
                     <div>
                       <p className="text-white font-medium text-sm">{u.name}</p>
                       <p className="text-slate-400 text-xs truncate max-w-[160px]">{u.email}</p>
-                      <span className={`mt-1 inline-block px-2 py-0.5 text-xs rounded-full ${u.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : u.role === 'lecturer' ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-700 text-slate-300'}`}>
-                        {u.role === 'admin' ? 'Admin' : u.role === 'lecturer' ? 'Lecturer' : 'Student'}
+                      <span className={`mt-1 inline-block px-2 py-0.5 text-xs rounded-full ${u.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : u.role === 'trainer' ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-700 text-slate-300'}`}>
+                        {u.role === 'admin' ? 'Admin' : u.role === 'trainer' ? 'Trainer' : 'Student'}
                       </span>
                     </div>
                     <button onClick={() => handleDeleteUser(u._id)} disabled={u._id === user?._id}
@@ -627,7 +627,7 @@ export default function AdminDashboard() {
                             className="bg-slate-800 text-slate-300 border border-slate-700 rounded p-1"
                           >
                             <option value="student">Student</option>
-                            <option value="lecturer">Lecturer</option>
+                            <option value="trainer">Trainer</option>
                             <option value="admin">Admin</option>
                           </select>
                         </td>
@@ -660,7 +660,7 @@ export default function AdminDashboard() {
                   <thead className="bg-slate-950 text-slate-400 text-sm">
                     <tr>
                       <th className="p-4 font-medium">Course Title</th>
-                      <th className="p-4 font-medium">Lecturer</th>
+                      <th className="p-4 font-medium">Trainer</th>
                       <th className="p-4 font-medium text-center">Enrolled Students</th>
                       <th className="p-4 font-medium text-center">Simulations</th>
                       <th className="p-4 font-medium text-right">Actions</th>
@@ -670,7 +670,7 @@ export default function AdminDashboard() {
                     {courses.map((c) => (
                       <tr key={c._id} className="hover:bg-slate-800/50 transition">
                         <td className="p-4 font-medium text-white">{c.title}</td>
-                        <td className="p-4 text-slate-400 text-sm">{c.lecturer?.name || 'Unknown'}</td>
+                        <td className="p-4 text-slate-400 text-sm">{c.trainer?.name || 'Unknown'}</td>
                         <td className="p-4 text-center text-slate-400">{c.students?.length || 0}</td>
                         <td className="p-4 text-center">
                           <span className="bg-sky-500/10 text-sky-400 border border-sky-500/20 text-xs px-2.5 py-1 rounded-full font-medium">

@@ -22,7 +22,7 @@ router.post('/register', async (req, res) => {
     // First user is admin automatically for demo purposes
     const isFirstUser = (await User.countDocuments({})) === 0;
     
-    let assignedRole = role === 'lecturer' ? 'lecturer' : 'student';
+    let assignedRole = role === 'trainer' ? 'trainer' : 'student';
     if (isFirstUser) assignedRole = 'admin';
     
     const user = await User.create({
@@ -90,9 +90,9 @@ router.put('/change-password', protect, async (req, res) => {
   }
 });
 
-// Get all students (for lecturers to enroll them)
+// Get all students (for trainers to enroll them)
 router.get('/users/students', protect, async (req, res) => {
-  if (req.user.role !== 'lecturer' && req.user.role !== 'admin') {
+  if (req.user.role !== 'trainer' && req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Not authorized' });
   }
   try {

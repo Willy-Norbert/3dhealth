@@ -4,23 +4,23 @@ import User from '../models/User.js';
 import Quiz from '../models/Quiz.js';
 import Progress from '../models/Progress.js';
 import QuizResult from '../models/QuizResult.js';
-import { protect, lecturer } from '../middleware/authMiddleware.js';
+import { protect, trainer } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 // GET /api/courses
-// Students get their enrolled courses, Lecturers get their created courses
+// Students get their enrolled courses, trainers get their created courses
 router.get('/', protect, async (req, res) => {
   try {
-    if (req.user.role === 'lecturer') {
-      const courses = await Course.find({ lecturer: req.user._id }).populate('students', 'name email');
+    if (req.user.role === 'trainer') {
+      const courses = await Course.find({ trainer: req.user._id }).populate('students', 'name email');
       res.json(courses);
     } else if (req.user.role === 'student') {
-      const courses = await Course.find({ students: req.user._id }).populate('lecturer', 'name');
+      const courses = await Course.find({ students: req.user._id }).populate('trainer', 'name');
       res.json(courses);
     } else {
       // Admin sees all
-      const courses = await Course.find().populate('lecturer', 'name').populate('students', 'name');
+      const courses = await Course.find().populate('trainer', 'name').populate('students', 'name');
       res.json(courses);
     }
   } catch (error) {
@@ -32,7 +32,7 @@ router.get('/', protect, async (req, res) => {
 // Students get all courses they are NOT enrolled in
 router.get('/available', protect, async (req, res) => {
   try {
-    const courses = await Course.find({ students: { $ne: req.user._id } }).populate('lecturer', 'name');
+    const courses = await Course.find({ students: { $ne: req.user._id } }).populate('trainer', 'name');
     res.json(courses);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -43,7 +43,7 @@ router.get('/available', protect, async (req, res) => {
 router.get('/:id', protect, async (req, res) => {
   try {
     const course = await Course.findById(req.params.id)
-      .populate('lecturer', 'name email')
+      .populate('trainer', 'name email')
       .populate('students', 'name email');
     
     if (!course) {
@@ -64,7 +64,7 @@ router.get('/:id', protect, async (req, res) => {
 // GET /api/courses/:id/student-dashboard-details
 router.get('/:id/student-dashboard-details', protect, async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id).populate('lecturer', 'name email');
+    const course = await Course.findById(req.params.id).populate('trainer', 'name email');
     if (!course) return res.status(404).json({ message: 'Course not found' });
 
     // Check if enrolled
@@ -182,7 +182,7 @@ router.get('/:id/progress', protect, async (req, res) => {
 });
 
 // GET /api/courses/:id/students-progress
-router.get('/:id/students-progress', protect, lecturer, async (req, res) => {
+router.get('/:id/students-progress', protect, trainer, async (req, res) => {
   try {
     const course = await Course.findById(req.params.id).populate('students', 'name email');
     if (!course) return res.status(404).json({ message: 'Course not found' });
@@ -241,14 +241,14 @@ router.get('/:id/students-progress', protect, lecturer, async (req, res) => {
 });
 
 // POST /api/courses
-// Lecturer only
-router.post('/', protect, lecturer, async (req, res) => {
+// trainer only
+router.post('/', protect, trainer, async (req, res) => {
   const { title, description, simulations } = req.body;
   try {
     const course = new Course({
       title,
       description,
-      lecturer: req.user._id,
+      trainer: req.user._id,
       simulations: simulations || []
     });
     const createdCourse = await course.save();
@@ -279,14 +279,14 @@ router.post('/:id/enroll', protect, async (req, res) => {
 });
 
 // PUT /api/courses/:id
-// Lecturer only
-router.put('/:id', protect, lecturer, async (req, res) => {
+// trainer only
+router.put('/:id', protect, trainer, async (req, res) => {
   const { title, description, simulations, students } = req.body;
   try {
     const course = await Course.findById(req.params.id);
     if (!course) return res.status(404).json({ message: 'Course not found' });
     
-    if (course.lecturer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (course.trainer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized to update this course' });
     }
 
@@ -303,13 +303,13 @@ router.put('/:id', protect, lecturer, async (req, res) => {
 });
 
 // DELETE /api/courses/:id
-// Lecturer only
-router.delete('/:id', protect, lecturer, async (req, res) => {
+// trainer only
+router.delete('/:id', protect, trainer, async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
     if (!course) return res.status(404).json({ message: 'Course not found' });
 
-    if (course.lecturer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (course.trainer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized to delete this course' });
     }
 

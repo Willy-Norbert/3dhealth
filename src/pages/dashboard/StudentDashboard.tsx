@@ -7,7 +7,7 @@ interface Course {
   _id: string;
   title: string;
   description: string;
-  lecturer: { name: string };
+  trainer: { name: string };
   simulations: string[];
 }
 
@@ -170,9 +170,9 @@ export default function StudentDashboard() {
                     <p className="text-sm text-slate-400 line-clamp-2 mb-3">{course.description}</p>
                     <p className="text-xs font-medium text-slate-500 flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-white">
-                        {(course.lecturer?.name || 'L').charAt(0).toUpperCase()}
+                        {(course.trainer?.name || 'L').charAt(0).toUpperCase()}
                       </span>
-                      {course.lecturer?.name || 'Unknown Lecturer'}
+                      {course.trainer?.name || 'Unknown Trainer'}
                     </p>
                   </div>
                   <div className="mt-auto pt-6 border-t border-slate-800">

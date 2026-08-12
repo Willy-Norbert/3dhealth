@@ -2,7 +2,7 @@ import express from 'express';
 import Quiz from '../models/Quiz.js';
 import QuizResult from '../models/QuizResult.js';
 import Course from '../models/Course.js';
-import { protect, lecturer } from '../middleware/authMiddleware.js';
+import { protect, trainer } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -27,9 +27,34 @@ router.get('/:id', protect, async (req, res) => {
   }
 });
 
+// GET /api/quizzes/:id/answers
+// Trainer-only: reveal correct answers for a quiz
+router.get('/:id/answers', protect, trainer, async (req, res) => {
+  try {
+    const quiz = await Quiz.findById(req.params.id);
+    if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+
+    // Ensure the requesting trainer owns the quiz
+    if (quiz.trainer.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to view answers for this quiz' });
+    }
+
+    // Return questions including correctOptionIndex
+    const questions = quiz.questions.map((q) => ({
+      questionText: q.questionText,
+      options: q.options,
+      correctOptionIndex: q.correctOptionIndex,
+    }));
+
+    res.json({ quizId: quiz._id, title: quiz.title, questions });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // POST /api/quizzes
-// Lecturer only
-router.post('/', protect, lecturer, async (req, res) => {
+// trainer only
+router.post('/', protect, trainer, async (req, res) => {
   const { title, courseId, simulation, questions } = req.body;
   try {
     const quiz = new Quiz({
@@ -37,7 +62,7 @@ router.post('/', protect, lecturer, async (req, res) => {
       course: courseId,
       simulation,
       questions,
-      lecturer: req.user._id
+      trainer: req.user._id
     });
     const createdQuiz = await quiz.save();
     res.status(201).json(createdQuiz);
@@ -83,8 +108,8 @@ router.post('/:id/submit', protect, async (req, res) => {
 });
 
 // GET /api/quizzes/course/:courseId/results
-// Lecturer sees all results for a course
-router.get('/course/:courseId/results', protect, lecturer, async (req, res) => {
+// trainer sees all results for a course
+router.get('/course/:courseId/results', protect, trainer, async (req, res) => {
   try {
     // Find quizzes for the course
     const quizzes = await Quiz.find({ course: req.params.courseId });
