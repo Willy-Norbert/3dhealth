@@ -26,9 +26,9 @@ export const admin = (req, res, next) => {
 };
 
 export const trainer = (req, res, next) => {
-  if (req.user && req.user.role === 'trainer') {
+  if (req.user && (req.user.role === 'trainer' || req.user.role === 'admin')) {
     next();
   } else {
-    res.status(401).json({ message: 'Not authorized as a trainer' });
+    res.status(401).json({ message: 'Not authorized as a trainer or admin' });
   }
 };

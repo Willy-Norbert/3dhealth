@@ -154,7 +154,7 @@ export default function MainLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-200">
       {/* ── HEADER ── */}
-      <header className="h-16 border-b border-slate-800 glass-dark sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6">
+      <header className="h-16 border-b border-slate-800 glass-dark sticky top-0 z-[999] flex items-center justify-between px-4 sm:px-6">
         {/* Logo */}
         <Link to="/" className="flex items-center shrink-0">
           <img src="/logo.png" alt="VR HealthEd" className="h-9 sm:h-10 w-auto object-contain" />
@@ -180,7 +180,7 @@ export default function MainLayout() {
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-60 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden z-50">
+                <div className="absolute right-0 top-full mt-2 w-60 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden z-[1000]">
                   <div className="px-4 py-4 border-b border-slate-800 bg-slate-800/50">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white font-bold">{initials}</div>

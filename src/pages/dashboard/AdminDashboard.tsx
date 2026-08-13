@@ -285,8 +285,14 @@ export default function AdminDashboard() {
   const [courses, setCourses] = useState<any[]>([]);
   const [statsData, setStatsData] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'users' | 'courses' | 'simulations'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'trainers' | 'courses' | 'simulations'>('users');
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  
+  // Course Modal States
+  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<any>(null);
+  const [courseForm, setCourseForm] = useState({ title: '', description: '', trainer: '', simulations: [] as string[] });
+
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -352,7 +358,7 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteCourse = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this course/lecture?')) return;
+    if (!confirm('Are you sure you want to delete this course?')) return;
     try {
       const res = await fetch(`http://localhost:5000/api/courses/${id}`, {
         method: 'DELETE',
@@ -370,6 +376,44 @@ export default function AdminDashboard() {
       console.error('Failed to delete course', error);
     }
   };
+
+  const handleSaveCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const method = editingCourse ? 'PUT' : 'POST';
+      const url = editingCourse 
+        ? `http://localhost:5000/api/courses/${editingCourse._id}` 
+        : `http://localhost:5000/api/courses`;
+        
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user?.token}`
+        },
+        body: JSON.stringify(courseForm)
+      });
+      
+      if (res.ok) {
+        const savedCourse = await res.json();
+        if (editingCourse) {
+          // It needs populated trainer for the table
+          const trainerObj = users.find(u => u._id === savedCourse.trainer) || savedCourse.trainer;
+          setCourses(courses.map(c => c._id === savedCourse._id ? { ...savedCourse, trainer: trainerObj } : c));
+        } else {
+          const trainerObj = users.find(u => u._id === savedCourse.trainer);
+          setCourses([...courses, { ...savedCourse, trainer: trainerObj }]);
+        }
+        setIsCourseModalOpen(false);
+      } else {
+        const errorData = await res.json();
+        alert(`Failed to save course: ${errorData.message}`);
+      }
+    } catch (error) {
+      console.error('Failed to save course', error);
+    }
+  };
+
 
   const handleRoleChange = async (id: string, newRole: string) => {
     try {
@@ -518,6 +562,98 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Course Modal */}
+      {isCourseModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div className="flex justify-between items-center p-6 border-b border-slate-800">
+              <h2 className="text-xl font-bold text-white">
+                {editingCourse ? 'Edit Course' : 'Create Course'}
+              </h2>
+              <button onClick={() => setIsCourseModalOpen(false)} className="text-slate-400 hover:text-white transition">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveCourse} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Title</label>
+                <input
+                  type="text"
+                  required
+                  value={courseForm.title}
+                  onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Description</label>
+                <textarea
+                  required
+                  value={courseForm.description}
+                  onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 min-h-[100px]"
+                ></textarea>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Assign Trainer</label>
+                <select
+                  required
+                  value={courseForm.trainer}
+                  onChange={(e) => setCourseForm({ ...courseForm, trainer: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500"
+                >
+                  <option value="">Select a Trainer</option>
+                  {users.filter(u => u.role === 'trainer' || u.role === 'admin').map(trainer => (
+                    <option key={trainer._id} value={trainer._id}>
+                      {trainer.name} ({trainer.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Simulations</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(sceneLabels).map(([id, label]) => (
+                    <label key={id} className="flex items-center gap-2 text-sm text-slate-300 bg-slate-800/50 p-2 rounded-lg border border-slate-800 cursor-pointer hover:bg-slate-800">
+                      <input
+                        type="checkbox"
+                        checked={courseForm.simulations.includes(id)}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setCourseForm(prev => ({
+                            ...prev,
+                            simulations: checked 
+                              ? [...prev.simulations, id]
+                              : prev.simulations.filter(s => s !== id)
+                          }));
+                        }}
+                        className="rounded border-slate-600 text-sky-500 focus:ring-sky-500 bg-slate-700"
+                      />
+                      <span className="truncate">{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="pt-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsCourseModalOpen(false)}
+                  className="px-4 py-2 rounded-xl font-medium text-slate-300 hover:text-white transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-6 py-2 rounded-xl transition shadow-[0_0_15px_rgba(14,165,233,0.3)]"
+                >
+                  Save Course
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto space-y-5 sm:space-y-8">
 
         {/* Header */}
@@ -554,22 +690,28 @@ export default function AdminDashboard() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-800 gap-4 mb-2">
+        <div className="flex border-b border-slate-800 gap-4 mb-2 overflow-x-auto pb-1">
           <button 
             onClick={() => setActiveTab('users')}
-            className={`pb-4 px-2 font-bold text-sm transition-all border-b-2 ${activeTab === 'users' ? 'border-sky-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+            className={`pb-4 px-2 font-bold text-sm transition-all border-b-2 whitespace-nowrap ${activeTab === 'users' ? 'border-sky-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
           >
             User Management
           </button>
           <button 
-            onClick={() => setActiveTab('courses')}
-            className={`pb-4 px-2 font-bold text-sm transition-all border-b-2 ${activeTab === 'courses' ? 'border-sky-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+            onClick={() => setActiveTab('trainers')}
+            className={`pb-4 px-2 font-bold text-sm transition-all border-b-2 whitespace-nowrap ${activeTab === 'trainers' ? 'border-sky-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
           >
-            Lectures & Courses
+            Trainers Management
+          </button>
+          <button 
+            onClick={() => setActiveTab('courses')}
+            className={`pb-4 px-2 font-bold text-sm transition-all border-b-2 whitespace-nowrap ${activeTab === 'courses' ? 'border-sky-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+          >
+            Courses Management
           </button>
           <button 
             onClick={() => setActiveTab('simulations')}
-            className={`pb-4 px-2 font-bold text-sm transition-all border-b-2 ${activeTab === 'simulations' ? 'border-sky-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+            className={`pb-4 px-2 font-bold text-sm transition-all border-b-2 whitespace-nowrap ${activeTab === 'simulations' ? 'border-sky-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
           >
             Simulation Engagement
           </button>
@@ -586,13 +728,13 @@ export default function AdminDashboard() {
               </div>
               {/* Mobile card list */}
               <div className="block sm:hidden divide-y divide-slate-800">
-                {users.map((u) => (
+                {users.filter(u => u.role !== 'trainer').map((u) => (
                   <div key={u._id} className="flex items-center justify-between px-4 py-3">
                     <div>
                       <p className="text-white font-medium text-sm">{u.name}</p>
                       <p className="text-slate-400 text-xs truncate max-w-[160px]">{u.email}</p>
-                      <span className={`mt-1 inline-block px-2 py-0.5 text-xs rounded-full ${u.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : u.role === 'trainer' ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-700 text-slate-300'}`}>
-                        {u.role === 'admin' ? 'Admin' : u.role === 'trainer' ? 'Trainer' : 'Student'}
+                      <span className={`mt-1 inline-block px-2 py-0.5 text-xs rounded-full ${u.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : 'bg-slate-700 text-slate-300'}`}>
+                        {u.role === 'admin' ? 'Admin' : 'Student'}
                       </span>
                     </div>
                     <button onClick={() => handleDeleteUser(u._id)} disabled={u._id === user?._id}
@@ -601,7 +743,7 @@ export default function AdminDashboard() {
                     </button>
                   </div>
                 ))}
-                {users.length === 0 && <p className="p-6 text-center text-slate-500 text-sm">No users found.</p>}
+                {users.filter(u => u.role !== 'trainer').length === 0 && <p className="p-6 text-center text-slate-500 text-sm">No users found.</p>}
               </div>
               {/* Desktop table */}
               <div className="hidden sm:block overflow-x-auto">
@@ -615,7 +757,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
-                    {users.map((u) => (
+                    {users.filter(u => u.role !== 'trainer').map((u) => (
                       <tr key={u._id} className="hover:bg-slate-800/50 transition">
                         <td className="p-4">{u.name}</td>
                         <td className="p-4 text-slate-400 text-sm">{u.email}</td>
@@ -639,8 +781,77 @@ export default function AdminDashboard() {
                         </td>
                       </tr>
                     ))}
-                    {users.length === 0 && (
+                    {users.filter(u => u.role !== 'trainer').length === 0 && (
                       <tr><td colSpan={4} className="p-8 text-center text-slate-500">No users found.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Trainers Management */}
+          {activeTab === 'trainers' && (
+            <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+              <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center gap-3">
+                <span className="text-orange-400 text-lg">👩‍🏫</span>
+                <h2 className="text-lg sm:text-xl font-bold text-white">Trainers Management</h2>
+              </div>
+              <div className="block sm:hidden divide-y divide-slate-800">
+                {users.filter(u => u.role === 'trainer').map((u) => (
+                  <div key={u._id} className="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <p className="text-white font-medium text-sm">{u.name}</p>
+                      <p className="text-slate-400 text-xs truncate max-w-[160px]">{u.email}</p>
+                      <span className="mt-1 inline-block px-2 py-0.5 text-xs rounded-full bg-orange-500/20 text-orange-400">
+                        Trainer
+                      </span>
+                    </div>
+                    <button onClick={() => handleDeleteUser(u._id)} disabled={u._id === user?._id}
+                      className="text-red-400 hover:text-red-300 disabled:opacity-30 transition p-2">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                {users.filter(u => u.role === 'trainer').length === 0 && <p className="p-6 text-center text-slate-500 text-sm">No trainers found.</p>}
+              </div>
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-slate-300">
+                  <thead className="bg-slate-950 text-slate-400 text-sm">
+                    <tr>
+                      <th className="p-4 font-medium">Name</th>
+                      <th className="p-4 font-medium">Email</th>
+                      <th className="p-4 font-medium">Role</th>
+                      <th className="p-4 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {users.filter(u => u.role === 'trainer').map((u) => (
+                      <tr key={u._id} className="hover:bg-slate-800/50 transition">
+                        <td className="p-4">{u.name}</td>
+                        <td className="p-4 text-slate-400 text-sm">{u.email}</td>
+                        <td className="p-4">
+                          <select
+                            value={u.role}
+                            onChange={(e) => handleRoleChange(u._id, e.target.value)}
+                            disabled={u._id === user?._id}
+                            className="bg-slate-800 text-slate-300 border border-slate-700 rounded p-1"
+                          >
+                            <option value="student">Student</option>
+                            <option value="trainer">Trainer</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </td>
+                        <td className="p-4 text-right">
+                          <button onClick={() => handleDeleteUser(u._id)} disabled={u._id === user?._id}
+                            className="text-red-400 hover:text-red-300 disabled:opacity-30 transition p-2">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {users.filter(u => u.role === 'trainer').length === 0 && (
+                      <tr><td colSpan={4} className="p-8 text-center text-slate-500">No trainers found.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -651,9 +862,21 @@ export default function AdminDashboard() {
           {/* Lectures & Courses Monitor */}
           {activeTab === 'courses' && (
             <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
-              <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center gap-3">
-                <span className="text-emerald-400 text-lg">📚</span>
-                <h2 className="text-lg sm:text-xl font-bold text-white">Lectures & Courses Monitor</h2>
+              <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-emerald-400 text-lg">📚</span>
+                  <h2 className="text-lg sm:text-xl font-bold text-white">Courses Management</h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setEditingCourse(null);
+                    setCourseForm({ title: '', description: '', trainer: '', simulations: [] });
+                    setIsCourseModalOpen(true);
+                  }}
+                  className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm transition"
+                >
+                  + Create Course
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-slate-300">
@@ -678,6 +901,22 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td className="p-4 text-right">
+                          <button 
+                            onClick={() => {
+                              setEditingCourse(c);
+                              setCourseForm({
+                                title: c.title,
+                                description: c.description,
+                                trainer: c.trainer?._id || '',
+                                simulations: c.simulations || []
+                              });
+                              setIsCourseModalOpen(true);
+                            }}
+                            className="text-sky-400 hover:text-sky-300 transition p-2 mr-2"
+                            title="Edit Course"
+                          >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                          </button>
                           <button 
                             onClick={() => handleDeleteCourse(c._id)}
                             className="text-red-400 hover:text-red-300 transition p-2"

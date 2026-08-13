@@ -16,10 +16,40 @@ export default function Login() {
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  const [isUnverifiedEmail, setIsUnverifiedEmail] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+
+  const handleResendVerification = async () => {
+    setIsResending(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(data.message || 'Verification code sent!');
+        setTimeout(() => {
+          navigate('/verify-email', { state: { email } });
+        }, 1500);
+      } else {
+        setError(data.message || 'Failed to resend verification code');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setIsUnverifiedEmail(false);
     
     try {
       const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
@@ -34,16 +64,17 @@ export default function Login() {
       const data = await res.json();
       
       if (!res.ok) {
+        if (data.message === 'Please verify your email address before logging in') {
+          setIsUnverifiedEmail(true);
+        }
         throw new Error(data.message || 'Authentication failed');
       }
 
       if (isRegister) {
-        setSuccess(data.message || 'Registration successful! Please check your email to verify your account.');
-        // Optionally switch to login mode after a delay
+        setSuccess(data.message || 'Registration successful! Redirecting to verification...');
         setTimeout(() => {
-          setIsRegister(false);
-          setSuccess('');
-        }, 5000);
+          navigate('/verify-email', { state: { email } });
+        }, 1500);
       } else {
         login(data);
         if (data.role === 'admin') {
@@ -73,8 +104,18 @@ export default function Login() {
         </div>
 
         {error && (
-          <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-xl mb-6 text-sm">
-            {error}
+          <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-xl mb-6 text-sm flex flex-col">
+            <span>{error}</span>
+            {isUnverifiedEmail && (
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isResending}
+                className="mt-2 w-fit bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition disabled:opacity-50"
+              >
+                {isResending ? 'Sending...' : 'Resend Verification Code'}
+              </button>
+            )}
           </div>
         )}
 

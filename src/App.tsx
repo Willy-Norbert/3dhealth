@@ -23,8 +23,8 @@ function App() {
           <Route index element={<Home />} />
           <Route path="login" element={<Login />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
-          <Route path="reset-password/:token" element={<ResetPassword />} />
-          <Route path="verify-email/:token" element={<VerifyEmail />} />
+          <Route path="reset-password" element={<ResetPassword />} />
+          <Route path="verify-email" element={<VerifyEmail />} />
           <Route path="dashboard/student" element={<StudentDashboard />} />
           <Route path="dashboard/student/browse" element={<BrowseCourses />} />
           <Route path="dashboard/trainer" element={<TrainerDashboard />} />

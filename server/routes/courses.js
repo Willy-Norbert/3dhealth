@@ -262,14 +262,16 @@ router.get('/:id/students-progress', protect, trainer, async (req, res) => {
 });
 
 // POST /api/courses
-// trainer only
+// trainer or admin
 router.post('/', protect, trainer, async (req, res) => {
-  const { title, description, simulations } = req.body;
+  const { title, description, simulations, trainer: assignedTrainer } = req.body;
   try {
+    const courseTrainer = (req.user.role === 'admin' && assignedTrainer) ? assignedTrainer : req.user._id;
+
     const course = new Course({
       title,
       description,
-      trainer: req.user._id,
+      trainer: courseTrainer,
       simulations: simulations || []
     });
     const createdCourse = await course.save();
@@ -313,9 +315,9 @@ router.post('/:id/enroll', protect, async (req, res) => {
 });
 
 // PUT /api/courses/:id
-// trainer only
+// trainer or admin
 router.put('/:id', protect, trainer, async (req, res) => {
-  const { title, description, simulations, students } = req.body;
+  const { title, description, simulations, students, trainer: assignedTrainer } = req.body;
   try {
     const course = await Course.findById(req.params.id);
     if (!course) return res.status(404).json({ message: 'Course not found' });
@@ -327,7 +329,33 @@ router.put('/:id', protect, trainer, async (req, res) => {
     course.title = title || course.title;
     course.description = description || course.description;
     if (simulations) course.simulations = simulations;
-    if (students) course.students = students;
+    
+    // If admin is updating the trainer
+    if (req.user.role === 'admin' && assignedTrainer) {
+      course.trainer = assignedTrainer;
+    }
+
+    if (students) {
+      const oldStudentIds = course.students.map(s => s.toString());
+      const newStudentIds = students.filter(s => !oldStudentIds.includes(s.toString()));
+      
+      course.students = students;
+
+      if (newStudentIds.length > 0) {
+        const usersToEmail = await User.find({ _id: { $in: newStudentIds } });
+        for (const u of usersToEmail) {
+          try {
+            await sendEmail({
+              email: u.email,
+              subject: `Enrolled: ${course.title} - VR HealthEd`,
+              message: `<h2>Welcome to ${course.title}!</h2><p>You have been enrolled in this course.</p><p>Head over to your dashboard to get started with the simulations and quizzes!</p>`
+            });
+          } catch (err) {
+            console.error('Failed to send trainer enrollment email:', err);
+          }
+        }
+      }
+    }
 
     const updatedCourse = await course.save();
     res.json(updatedCourse);

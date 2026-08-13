@@ -27,9 +27,9 @@ router.post('/register', async (req, res) => {
     let assignedRole = role === 'trainer' ? 'trainer' : 'student';
     if (isFirstUser) assignedRole = 'admin';
     
-    // Generate email verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedToken = crypto.createHash('sha256').update(otp).digest('hex');
 
     const user = await User.create({
       name,
@@ -42,27 +42,22 @@ router.post('/register', async (req, res) => {
 
     if (user) {
       // Send verification email
-      const verifyUrl = `${req.protocol}://${req.get('host')}/api/auth/verify-email/${verificationToken}`;
-      // In development, the frontend is usually on a different port, e.g., 5173
-      const frontendUrl = req.get('origin') || 'http://localhost:5173';
-      const frontendVerifyUrl = `${frontendUrl}/verify-email/${verificationToken}`;
-      
       const message = `
         <h2>Welcome to VR HealthEd!</h2>
-        <p>Please verify your email address by clicking the link below:</p>
-        <a href="${frontendVerifyUrl}" target="_blank">Verify Email</a>
+        <p>Please verify your email address by entering the following OTP code:</p>
+        <h3 style="font-size: 24px; letter-spacing: 2px; color: #0ea5e9;">${otp}</h3>
         <p>If you did not request this, please ignore this email.</p>
       `;
 
       try {
         await sendEmail({
           email: user.email,
-          subject: 'Email Verification - VR HealthEd',
+          subject: 'Email Verification OTP - VR HealthEd',
           message,
         });
 
         res.status(201).json({
-          message: 'Registration successful! Please check your email to verify your account.',
+          message: 'Registration successful! Please check your email for your verification code.',
         });
       } catch (err) {
         user.emailVerificationToken = undefined;
@@ -105,18 +100,24 @@ router.post('/login', async (req, res) => {
 });
 
 
-// Verify Email
-router.post('/verify-email/:token', async (req, res) => {
+// Verify Email (OTP)
+router.post('/verify-email', async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ message: 'Email and OTP are required' });
+  }
+
   try {
-    const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+    const hashedToken = crypto.createHash('sha256').update(otp).digest('hex');
 
     const user = await User.findOne({
+      email,
       emailVerificationToken: hashedToken,
       emailVerificationExpires: { $gt: Date.now() }
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired verification token' });
+      return res.status(400).json({ message: 'Invalid or expired OTP code' });
     }
 
     user.isEmailVerified = true;
@@ -130,6 +131,53 @@ router.post('/verify-email/:token', async (req, res) => {
   }
 });
 
+// Resend Verification Email (OTP)
+router.post('/resend-verification', async (req, res) => {
+  const { email } = req.body;
+  
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedToken = crypto.createHash('sha256').update(otp).digest('hex');
+
+    user.emailVerificationToken = hashedToken;
+    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    await user.save({ validateBeforeSave: false });
+
+    const message = `
+      <h2>Welcome back to VR HealthEd!</h2>
+      <p>Please verify your email address by entering the following OTP code:</p>
+      <h3 style="font-size: 24px; letter-spacing: 2px; color: #0ea5e9;">${otp}</h3>
+      <p>If you did not request this, please ignore this email.</p>
+    `;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Email Verification OTP - VR HealthEd',
+        message,
+      });
+
+      res.json({ message: 'A new verification code has been sent to your email.' });
+    } catch (err) {
+      user.emailVerificationToken = undefined;
+      user.emailVerificationExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+      return res.status(500).json({ message: 'Error sending email' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Forgot Password
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
@@ -137,19 +185,16 @@ router.post('/forgot-password', async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: 'There is no user with that email' });
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.resetPasswordToken = crypto.createHash('sha256').update(otp).digest('hex');
     user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
 
     await user.save({ validateBeforeSave: false });
-
-    const frontendUrl = req.get('origin') || 'http://localhost:5173';
-    const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
     
     const message = `
       <h2>Password Reset Request</h2>
-      <p>You requested a password reset. Please click the link below to reset your password:</p>
-      <a href="${resetUrl}" target="_blank">Reset Password</a>
+      <p>You requested a password reset. Please enter the following OTP code to reset your password:</p>
+      <h3 style="font-size: 24px; letter-spacing: 2px; color: #0ea5e9;">${otp}</h3>
       <p>If you did not request this, please ignore this email.</p>
     `;
 
@@ -172,21 +217,27 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// Reset Password
-router.post('/reset-password/:token', async (req, res) => {
+// Reset Password (OTP)
+router.post('/reset-password', async (req, res) => {
+  const { email, otp, password } = req.body;
+  if (!email || !otp || !password) {
+    return res.status(400).json({ message: 'Email, OTP, and new password are required' });
+  }
+
   try {
-    const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+    const hashedToken = crypto.createHash('sha256').update(otp).digest('hex');
 
     const user = await User.findOne({
+      email,
       resetPasswordToken: hashedToken,
       resetPasswordExpires: { $gt: Date.now() }
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired reset token' });
+      return res.status(400).json({ message: 'Invalid or expired OTP code' });
     }
 
-    user.password = req.body.password;
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();

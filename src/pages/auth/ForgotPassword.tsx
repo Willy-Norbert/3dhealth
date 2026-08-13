@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function ForgotPassword() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
@@ -22,7 +23,8 @@ export default function ForgotPassword() {
       
       if (res.ok) {
         setStatus('success');
-        setMessage(data.message || 'If an account with that email exists, a reset link has been sent.');
+        setMessage(data.message || 'If an account with that email exists, an OTP code has been sent.');
+        setTimeout(() => navigate('/reset-password', { state: { email } }), 1500);
       } else {
         setStatus('error');
         setMessage(data.message || 'Failed to request password reset.');
