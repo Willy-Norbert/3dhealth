@@ -2,7 +2,9 @@ import express from 'express';
 import Quiz from '../models/Quiz.js';
 import QuizResult from '../models/QuizResult.js';
 import Course from '../models/Course.js';
+import User from '../models/User.js';
 import { protect, trainer } from '../middleware/authMiddleware.js';
+import sendEmail from '../utils/sendEmail.js';
 
 const router = express.Router();
 
@@ -101,6 +103,23 @@ router.post('/:id/submit', protect, async (req, res) => {
     });
 
     const savedResult = await result.save();
+
+    // Send quiz results email
+    const user = await User.findById(req.user._id);
+    if (user) {
+      try {
+        await sendEmail({
+          email: user.email,
+          subject: `Quiz Results: ${quiz.title} - VR HealthEd`,
+          message: `<h2>Quiz Completed!</h2>
+                    <p>You have submitted the quiz <strong>${quiz.title}</strong>.</p>
+                    <p><strong>Your Score:</strong> ${score} out of ${quiz.questions.length}</p>`
+        });
+      } catch (err) {
+        console.error('Failed to send quiz result email:', err);
+      }
+    }
+
     res.status(201).json(savedResult);
   } catch (error) {
     res.status(500).json({ message: error.message });

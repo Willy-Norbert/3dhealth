@@ -6,7 +6,12 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['student', 'trainer', 'admin'], default: 'student' },
-  completedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }]
+  completedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+  isEmailVerified: { type: Boolean, default: false },
+  emailVerificationToken: String,
+  emailVerificationExpires: Date,
+  resetPasswordToken: String,
+  resetPasswordExpires: Date
 }, { timestamps: true });
 
 // Hash password before saving

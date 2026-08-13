@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -13,11 +13,13 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('student');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     
     try {
       const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
@@ -35,13 +37,22 @@ export default function Login() {
         throw new Error(data.message || 'Authentication failed');
       }
 
-      login(data);
-      if (data.role === 'admin') {
-        navigate('/dashboard/admin');
-      } else if (data.role === 'trainer') {
-        navigate('/dashboard/trainer');
+      if (isRegister) {
+        setSuccess(data.message || 'Registration successful! Please check your email to verify your account.');
+        // Optionally switch to login mode after a delay
+        setTimeout(() => {
+          setIsRegister(false);
+          setSuccess('');
+        }, 5000);
       } else {
-        navigate('/dashboard/student');
+        login(data);
+        if (data.role === 'admin') {
+          navigate('/dashboard/admin');
+        } else if (data.role === 'trainer') {
+          navigate('/dashboard/trainer');
+        } else {
+          navigate('/dashboard/student');
+        }
       }
     } catch (err: any) {
       setError(err.message);
@@ -64,6 +75,12 @@ export default function Login() {
         {error && (
           <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-xl mb-6 text-sm">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-green-500/20 border border-green-500 text-green-200 px-4 py-3 rounded-xl mb-6 text-sm">
+            {success}
           </div>
         )}
 
@@ -127,6 +144,13 @@ export default function Login() {
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
+            {!isRegister && (
+              <div className="text-right mt-1">
+                <Link to="/forgot-password" className="text-xs text-blue-200 hover:text-white transition">
+                  Forgot Password?
+                </Link>
+              </div>
+            )}
           </div>
           
           <div className="pt-4">

@@ -5,6 +5,7 @@ import Quiz from '../models/Quiz.js';
 import Progress from '../models/Progress.js';
 import QuizResult from '../models/QuizResult.js';
 import { protect, trainer } from '../middleware/authMiddleware.js';
+import sendEmail from '../utils/sendEmail.js';
 
 const router = express.Router();
 
@@ -112,6 +113,16 @@ router.get('/:id/student-dashboard-details', protect, async (req, res) => {
         if (!user.completedCourses.some(id => id.equals(course._id))) {
           user.completedCourses.push(course._id);
           await user.save();
+          
+          try {
+            await sendEmail({
+              email: user.email,
+              subject: `Congratulations on completing ${course.title}! - VR HealthEd`,
+              message: `<h2>Course Completed!</h2><p>Congratulations on completing all simulations and quizzes for <strong>${course.title}</strong>. Great job!</p>`
+            });
+          } catch (err) {
+            console.error('Failed to send course completion email:', err);
+          }
         }
       }
     }
@@ -171,6 +182,16 @@ router.get('/:id/progress', protect, async (req, res) => {
         if (!user.completedCourses.some(id => id.equals(course._id))) {
           user.completedCourses.push(course._id);
           await user.save();
+          
+          try {
+            await sendEmail({
+              email: user.email,
+              subject: `Congratulations on completing ${course.title}! - VR HealthEd`,
+              message: `<h2>Course Completed!</h2><p>Congratulations on completing all simulations and quizzes for <strong>${course.title}</strong>. Great job!</p>`
+            });
+          } catch (err) {
+            console.error('Failed to send course completion email:', err);
+          }
         }
       }
     }
@@ -271,6 +292,19 @@ router.post('/:id/enroll', protect, async (req, res) => {
     if (!course.students.includes(req.user._id)) {
       course.students.push(req.user._id);
       await course.save();
+
+      const user = await User.findById(req.user._id);
+      if (user) {
+        try {
+          await sendEmail({
+            email: user.email,
+            subject: `Enrolled: ${course.title} - VR HealthEd`,
+            message: `<h2>Welcome to ${course.title}!</h2><p>You have successfully enrolled in this course.</p><p>Head over to your dashboard to get started with the simulations and quizzes!</p>`
+          });
+        } catch (err) {
+          console.error('Failed to send enrollment email:', err);
+        }
+      }
     }
     res.json({ message: 'Successfully enrolled' });
   } catch (error) {
