@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { ArrowLeft, PlayCircle, Users, Plus, X, Search } from 'lucide-react';
 
@@ -16,7 +16,6 @@ const availableSims = [
 export default function CourseDetailTrainer() {
   const { courseId } = useParams();
   const user = useAuthStore((state) => state.user);
-  const navigate = useNavigate();
   
   const [course, setCourse] = useState<any>(null);
   const [studentsList, setStudentsList] = useState<any[]>([]);

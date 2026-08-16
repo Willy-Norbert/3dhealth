@@ -280,7 +280,7 @@ function generateReport(users: UserItem[], stats: Stat[], adminName: string) {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const [users, setUsers] = useState<UserItem[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [statsData, setStatsData] = useState<AdminStats | null>(null);

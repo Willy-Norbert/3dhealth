@@ -26,6 +26,27 @@ const scenes = [
   { id: 'ambulance', name: 'Ambulance Unit',      emoji: '🚑' },
 ];
 
+const getLaunchedSimsKey = (courseId?: string | null, userId?: string) => {
+  if (!courseId || !userId) return null;
+  return `launched_sims_${courseId}_${userId}`;
+};
+
+const markSimulationAccessed = (courseId?: string | null, userId?: string, simId?: string | null) => {
+  if (!courseId || !userId || !simId) return;
+
+  const key = getLaunchedSimsKey(courseId, userId);
+  if (!key) return;
+
+  try {
+    const saved = localStorage.getItem(key);
+    const launched = new Set(saved ? JSON.parse(saved) : []);
+    launched.add(simId);
+    localStorage.setItem(key, JSON.stringify([...launched]));
+  } catch (error) {
+    console.error('Unable to save simulation launch state:', error);
+  }
+};
+
 function Loader() {
   const { progress } = useProgress();
   return <Html center className="text-white text-xl font-bold">{progress.toFixed(0)} % loaded</Html>;
@@ -33,16 +54,17 @@ function Loader() {
 
 export default function VRExperience() {
   const [searchParams] = useSearchParams();
+  const courseId = searchParams.get('courseId');
   const initialSim = searchParams.get('sim');
   const [selectedScene, setSelectedScene] = useState(initialSim || 'ward');
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [nextQuiz, setNextQuiz] = useState<{ id: string; title: string } | null>(null);
   const user = useAuthStore((state) => state.user);
   const [allowedSims, setAllowedSims] = useState<string[] | null>(null);
 
   useEffect(() => {
-    const cid = searchParams.get('courseId');
-    if (user?.role === 'student' && cid) {
-      fetch(`http://localhost:5000/api/courses/${cid}`, {
+    if (user?.role === 'student' && courseId) {
+      fetch(`http://localhost:5000/api/courses/${courseId}`, {
         headers: { 'Authorization': `Bearer ${user.token}` }
       })
       .then(res => res.json())
@@ -51,7 +73,34 @@ export default function VRExperience() {
       })
       .catch(console.error);
     }
-  }, [user, searchParams]);
+  }, [user, courseId]);
+
+  useEffect(() => {
+    if (!user || user.role !== 'student' || !courseId || !selectedScene) return;
+
+    if (allowedSims && allowedSims.length > 0 && !allowedSims.includes(selectedScene)) {
+      return;
+    }
+
+    markSimulationAccessed(courseId, user._id, selectedScene);
+  }, [user, courseId, selectedScene, allowedSims]);
+
+  useEffect(() => {
+    if (!user || user.role !== 'student' || !courseId || !selectedScene) {
+      setNextQuiz(null);
+      return;
+    }
+
+    fetch(`http://localhost:5000/api/quizzes/course/${courseId}`, {
+      headers: { 'Authorization': `Bearer ${user.token}` }
+    })
+      .then(res => res.json())
+      .then((quizzes) => {
+        const matchedQuiz = quizzes.find((quiz: any) => quiz.simulation === selectedScene);
+        setNextQuiz(matchedQuiz ? { id: matchedQuiz._id, title: matchedQuiz.title } : null);
+      })
+      .catch(() => setNextQuiz(null));
+  }, [user, courseId, selectedScene]);
 
   // Students should not access the VRExperience page directly without a course context
   if (user?.role === 'student' && !searchParams.get('courseId')) {
@@ -157,6 +206,17 @@ export default function VRExperience() {
 
       {/* ── MAIN CANVAS AREA ── */}
       <div className="flex-1 bg-gray-900 relative overflow-hidden">
+        {user?.role === 'student' && courseId && nextQuiz && (
+          <div className="absolute bottom-5 right-5 z-20">
+            <Link
+              to={`/quiz/${nextQuiz.id}?courseId=${courseId}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-slate-950 shadow-[0_0_25px_rgba(16,185,129,0.3)] transition hover:bg-emerald-400"
+            >
+              Next: {nextQuiz.title}
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+        )}
 
         {/* Canvas (blurred for guests) */}
         <div className={`absolute inset-0 z-0 transition-all duration-500 ${!user ? 'blur-xl scale-105 opacity-50' : ''}`}>

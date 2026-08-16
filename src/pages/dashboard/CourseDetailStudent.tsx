@@ -18,7 +18,6 @@ export default function CourseDetailStudent() {
   const user = useAuthStore((state) => state.user);
   const [course, setCourse] = useState<any>(null);
   const [quizzes, setQuizzes] = useState<any[]>([]);
-  const [courseProgress, setCourseProgress] = useState({ progressPercentage: 0, isFinished: false });
   const [quizResults, setQuizResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,6 +29,15 @@ export default function CourseDetailStudent() {
       return new Set(saved ? JSON.parse(saved) : []);
     } catch { return new Set(); }
   });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`launched_sims_${courseId}_${user?._id}`);
+      setLaunchedSims(new Set(saved ? JSON.parse(saved) : []));
+    } catch {
+      setLaunchedSims(new Set());
+    }
+  }, [courseId, user?._id]);
 
   const markSimLaunched = (simId: string) => {
     setLaunchedSims(prev => {
@@ -51,7 +59,6 @@ export default function CourseDetailStudent() {
           const data = await res.json();
           setCourse(data.course);
           setQuizzes(data.quizzes);
-          setCourseProgress({ progressPercentage: data.progressPercentage, isFinished: data.isFinished });
           setQuizResults(data.quizResults);
         }
       } catch (err) {
@@ -81,8 +88,6 @@ export default function CourseDetailStudent() {
       </div>
     );
   }
-
-  const { progressPercentage, isFinished } = courseProgress;
 
   const totalQuizzes = quizzes.length;
   const completedQuizzes = quizResults.length;

@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { CheckCircle, XCircle } from 'lucide-react';
 
 export default function VerifyEmail() {
-  const navigate = useNavigate();
   const location = useLocation();
   
   const [email, setEmail] = useState('');

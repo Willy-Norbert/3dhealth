@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, PlayCircle, Clock, Trophy, Activity, ArrowRight } from 'lucide-react';
+import { BookOpen, Clock, Trophy, Activity, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
 interface Course {
