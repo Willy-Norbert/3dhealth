@@ -146,7 +146,7 @@ export default function QuizTaker() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
           <div>
-            <div className="flex items-center gap-3 text-emerald-500 font-bold mb-2 text-sm uppercase tracking-wider">
+            <div className="flex items-center gap-3 text-emerald-500 font-bold mb-2 text-sm italic tracking-wider">
               <FileText className="w-4 h-4" />
               <span>Knowledge Assessment</span>
             </div>

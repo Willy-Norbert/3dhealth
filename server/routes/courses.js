@@ -262,16 +262,14 @@ router.get('/:id/students-progress', protect, trainer, async (req, res) => {
 });
 
 // POST /api/courses
-// trainer or admin
+// trainer and admin
 router.post('/', protect, trainer, async (req, res) => {
   const { title, description, simulations, trainer: assignedTrainer } = req.body;
   try {
-    const courseTrainer = (req.user.role === 'admin' && assignedTrainer) ? assignedTrainer : req.user._id;
-
     const course = new Course({
       title,
       description,
-      trainer: courseTrainer,
+      trainer: req.user.role === 'admin' && assignedTrainer ? assignedTrainer : req.user._id,
       simulations: simulations || []
     });
     const createdCourse = await course.save();
@@ -315,7 +313,7 @@ router.post('/:id/enroll', protect, async (req, res) => {
 });
 
 // PUT /api/courses/:id
-// trainer or admin
+// trainer and admin
 router.put('/:id', protect, trainer, async (req, res) => {
   const { title, description, simulations, students, trainer: assignedTrainer } = req.body;
   try {
@@ -330,7 +328,6 @@ router.put('/:id', protect, trainer, async (req, res) => {
     course.description = description || course.description;
     if (simulations) course.simulations = simulations;
     
-    // If admin is updating the trainer
     if (req.user.role === 'admin' && assignedTrainer) {
       course.trainer = assignedTrainer;
     }

@@ -126,7 +126,7 @@ export default function CourseDetailStudent() {
               <span className="text-4xl">🏆</span>
             </div>
             <div>
-              <p className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-1">Course Grade Average</p>
+              <p className="text-slate-400 text-sm font-medium italic tracking-wider mb-1">Course Grade Average</p>
               <div className="flex items-end gap-1">
                 <span className="text-3xl font-black text-white">{averagePercentage}%</span>
               </div>
@@ -140,7 +140,7 @@ export default function CourseDetailStudent() {
               <span className="text-4xl">📝</span>
             </div>
             <div>
-              <p className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-1">Quizzes Completed</p>
+              <p className="text-slate-400 text-sm font-medium italic tracking-wider mb-1">Quizzes Completed</p>
               <div className="flex items-end gap-1">
                 <span className="text-3xl font-black text-white">{completedQuizzes} <span className="text-slate-500 text-lg">/ {totalQuizzes}</span></span>
               </div>
@@ -154,7 +154,7 @@ export default function CourseDetailStudent() {
               <span className="text-4xl">📊</span>
             </div>
             <div>
-              <p className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-1">Total Marks Earned</p>
+              <p className="text-slate-400 text-sm font-medium italic tracking-wider mb-1">Total Marks Earned</p>
               <div className="flex items-end gap-1">
                 <span className="text-3xl font-black text-white">{totalQuizScore} <span className="text-slate-500 text-lg">/ {totalPossibleScore}</span></span>
               </div>

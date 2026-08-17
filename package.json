@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "server": "nodemon server/server.js",
-    "client": "vite",
+    "client": "vite --host",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "reset-db": "node server/resetDbAndSeedAdmin.js --confirm --email=zakarythompson048@gmail.com --password=12345678",
     "build": "tsc -b && vite build",

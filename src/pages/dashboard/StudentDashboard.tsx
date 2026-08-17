@@ -89,7 +89,7 @@ export default function StudentDashboard() {
                 <Clock className="w-24 h-24 text-sky-400" />
               </div>
               <div className="relative z-10">
-                <p className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-1">Time in VR</p>
+                <p className="text-slate-400 text-sm font-medium italic tracking-wider mb-1">Time in VR</p>
                 <div className="flex items-end gap-2">
                   <span className="text-4xl font-black text-white">{hours}</span>
                   <span className="text-slate-500 mb-1 font-medium">hrs</span>
@@ -108,7 +108,7 @@ export default function StudentDashboard() {
                 <Trophy className="w-24 h-24 text-emerald-400" />
               </div>
               <div className="relative z-10">
-                <p className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-1">Average Quiz Score</p>
+                <p className="text-slate-400 text-sm font-medium italic tracking-wider mb-1">Average Quiz Score</p>
                 <div className="flex items-end gap-1">
                   <span className="text-4xl font-black text-white">{avgScore}</span>
                   <span className="text-2xl font-bold text-slate-500 mb-1">%</span>
@@ -125,7 +125,7 @@ export default function StudentDashboard() {
                 <BookOpen className="w-24 h-24 text-purple-400" />
               </div>
               <div className="relative z-10">
-                <p className="text-slate-400 text-sm font-medium uppercase tracking-wider mb-1">Active Courses</p>
+                <p className="text-slate-400 text-sm font-medium italic tracking-wider mb-1">Active Courses</p>
                 <div className="flex items-end gap-2">
                   <span className="text-4xl font-black text-white">{courses.length}</span>
                 </div>

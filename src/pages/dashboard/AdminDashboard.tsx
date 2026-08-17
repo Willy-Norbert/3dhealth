@@ -92,11 +92,11 @@ function generateReport(users: UserItem[], stats: Stat[], adminName: string) {
         .header { display: flex; justify-content: space-between; align-items: center; background: #0f172a; border-bottom: 4px solid #0ea5e9; padding: 28px 36px; margin: -48px -52px 36px -52px; }
         .header img { height: 60px; object-fit: contain; filter: brightness(1.1); }
         .header-meta { text-align: right; font-size: 13px; color: #cbd5e1; }
-        .header-meta strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; margin-bottom: 2px; }
+        .header-meta strong { display: block; font-size: 10px; text-transform: italic; letter-spacing: 1.5px; color: #64748b; margin-bottom: 2px; }
         .header-meta span { color: #f1f5f9; font-weight: 600; }
 
         /* Title */
-        .report-title { font-size: 36px; font-weight: 900; text-align: center; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 32px; }
+        .report-title { font-size: 36px; font-weight: 900; text-align: center; text-transform: italic; letter-spacing: 2px; margin-bottom: 32px; }
         
         /* Meta row */
         .meta-grid { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #d1d5db; margin-bottom: 28px; }
@@ -105,7 +105,7 @@ function generateReport(users: UserItem[], stats: Stat[], adminName: string) {
         .meta-cell strong { font-weight: 700; margin-right: 8px; }
 
         /* Section headers */
-        .section-header { background: #111827; color: #fff; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; padding: 10px 16px; margin-bottom: 0; }
+        .section-header { background: #111827; color: #fff; font-weight: 700; font-size: 13px; text-transform: italic; letter-spacing: 1.5px; padding: 10px 16px; margin-bottom: 0; }
         .section-body { border: 1px solid #d1d5db; border-top: none; padding: 16px; margin-bottom: 28px; font-size: 14px; line-height: 1.7; }
         .section-body ul { padding-left: 20px; }
         .section-body ul li { margin-bottom: 6px; }
@@ -118,14 +118,14 @@ function generateReport(users: UserItem[], stats: Stat[], adminName: string) {
         /* Table */
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         table thead { background: #111827; color: #fff; }
-        table thead th { padding: 10px 12px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        table thead th { padding: 10px 12px; text-align: left; font-weight: 600; font-size: 12px; text-transform: italic; letter-spacing: 0.5px; }
         table thead th:not(:first-child) { text-align: center; }
         
         /* Stat cards */
         .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
         .stat-card { border: 1px solid #d1d5db; padding: 16px; text-align: center; }
         .stat-card .num { font-size: 28px; font-weight: 900; }
-        .stat-card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-top: 4px; }
+        .stat-card .label { font-size: 11px; text-transform: italic; letter-spacing: 1px; color: #6b7280; margin-top: 4px; }
 
         /* Footer */
         .footer { border-top: 2px solid #111827; padding-top: 16px; margin-top: 40px; display: flex; justify-content: space-between; font-size: 11px; color: #9ca3af; }
@@ -495,7 +495,7 @@ export default function AdminDashboard() {
 
                 {showDownloadMenu && (
                   <div className="absolute right-0 top-full mt-2 w-56 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden z-50">
-                    <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-800">
+                    <div className="px-3 py-2 text-xs font-semibold text-slate-500 italic tracking-wider border-b border-slate-800">
                       Choose Format
                     </div>
                     {[

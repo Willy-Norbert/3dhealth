@@ -255,7 +255,7 @@ export default function CourseDetailTrainer() {
                         {prog && (
                           <div className="text-right shrink-0">
                             {prog.isFinished ? (
-                              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20 uppercase tracking-wider">Done</span>
+                              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20 italic tracking-wider">Done</span>
                             ) : (
                               <span className="text-xs font-semibold text-slate-400 bg-slate-700/30 px-2 py-1 rounded border border-slate-700/50">{prog.progressPercentage}%</span>
                             )}
